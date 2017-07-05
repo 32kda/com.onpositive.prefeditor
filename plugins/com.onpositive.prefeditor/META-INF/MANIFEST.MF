@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Preference Editor
+Bundle-SymbolicName: com.onpositive.prefeditor;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.onpositive.prefeditor.PrefEditorPlugin
+Bundle-Vendor: ONPOSITIVE
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.core.resources,
+ org.apache.commons.io,
+ org.eclipse.debug.core;bundle-version="3.9.1"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-ActivationPolicy: lazy
