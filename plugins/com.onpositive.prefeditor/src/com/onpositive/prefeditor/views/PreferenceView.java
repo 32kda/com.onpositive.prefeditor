@@ -81,6 +81,8 @@ public class PreferenceView extends ViewPart {
 	
 	private Action copyAction;
 	
+	private Action reloadAction;
+	
 	private Action copyValueAction;
 
 	private String folderPath;
@@ -256,6 +258,12 @@ public class PreferenceView extends ViewPart {
 		return "";
 	}
 	
+	protected void reloadPrefs() {
+		TreePath[] paths = viewer.getExpandedTreePaths();
+		viewer.setInput(new PreferenceProvider(folderPath));
+		viewer.setExpandedTreePaths(paths);
+	}
+	
 	protected void folderChoosed(String folderPath) {
 		this.folderPath = folderPath;
 		viewer.setInput(new PreferenceProvider(folderPath));
@@ -309,6 +317,7 @@ public class PreferenceView extends ViewPart {
 	}
 	
 	private void fillLocalToolBar(IToolBarManager manager) {
+		manager.add(reloadAction);
 		manager.add(chooseFolderAction);
 		manager.add(viewModeAction);
 		manager.add(addAction);
@@ -397,6 +406,18 @@ public class PreferenceView extends ViewPart {
 		addAction.setText("Add preference");
 		addAction.setToolTipText("add preference");
 		addAction.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/add.png"));
+		
+		reloadAction = new Action() {
+			
+			@Override
+			public void run() {
+				reloadPrefs();
+			}
+			
+		};
+		reloadAction.setText("Reload prefs");
+		reloadAction.setToolTipText("Reload preferences from current folder");
+		reloadAction.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/refresh.gif"));
 		
 		copyAction = new Action() {
 			@Override
