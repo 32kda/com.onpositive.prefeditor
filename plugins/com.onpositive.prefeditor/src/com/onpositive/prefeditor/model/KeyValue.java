@@ -28,5 +28,10 @@ public class KeyValue {
 	public String getParentNode() {
 		return parentNode;
 	}
+	
+	@Override
+	public String toString() {
+		return key + " = " + value;
+	}
 
 }

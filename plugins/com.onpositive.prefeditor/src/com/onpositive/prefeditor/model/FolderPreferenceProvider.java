@@ -14,7 +14,7 @@ import java.util.Properties;
 
 import com.onpositive.prefeditor.PrefEditorPlugin;
 
-public class PreferenceProvider {
+public class FolderPreferenceProvider implements IPreferenceProvider {
 	
 	protected static final String EXT = ".prefs";
 	
@@ -22,11 +22,11 @@ public class PreferenceProvider {
 	
 	protected File preferenceFolder;
 	
-	public PreferenceProvider(String prefsFolderPath) {
+	public FolderPreferenceProvider(String prefsFolderPath) {
 		this(new File(prefsFolderPath));
 	}
 	
-	public PreferenceProvider(File preferenceFolder) {
+	public FolderPreferenceProvider(File preferenceFolder) {
 		super();
 		this.preferenceFolder = preferenceFolder;
 		loadPrefs();
@@ -62,6 +62,10 @@ public class PreferenceProvider {
 		return propFiles.keySet().stream().sorted().toArray(String[]::new);
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.onpositive.prefeditor.model.IPreferenceProvider#getPrefsFor(java.lang.String)
+	 */
+	@Override
 	public KeyValue[] getPrefsFor(String fileName) {
 		Properties properties = propFiles.get(fileName);
 		if (properties == null) {
@@ -72,6 +76,10 @@ public class PreferenceProvider {
 			toArray(KeyValue[]::new);
 	}
 
+	/* (non-Javadoc)
+	 * @see com.onpositive.prefeditor.model.IPreferenceProvider#updateValue(com.onpositive.prefeditor.model.KeyValue)
+	 */
+	@Override
 	public void updateValue(KeyValue keyValue) {
 		String parentNode = keyValue.getParentNode();
 		Properties properties = propFiles.get(parentNode);
@@ -92,6 +100,10 @@ public class PreferenceProvider {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.onpositive.prefeditor.model.IPreferenceProvider#remove(com.onpositive.prefeditor.model.KeyValue)
+	 */
+	@Override
 	public void remove(KeyValue keyValue) {
 		String parentNode = keyValue.getParentNode();
 		Properties properties = propFiles.get(parentNode);
@@ -101,6 +113,10 @@ public class PreferenceProvider {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.onpositive.prefeditor.model.IPreferenceProvider#add(com.onpositive.prefeditor.model.KeyValue)
+	 */
+	@Override
 	public void add(KeyValue newElement) {
 		String parentNode = newElement.getParentNode();
 		Properties properties = propFiles.get(parentNode);
@@ -112,6 +128,10 @@ public class PreferenceProvider {
 		storeProps(parentNode + EXT, properties);
 	}
 
+	/* (non-Javadoc)
+	 * @see com.onpositive.prefeditor.model.IPreferenceProvider#removeCategory(java.lang.String)
+	 */
+	@Override
 	public void removeCategory(String category) {
 		propFiles.remove(category);
 		File file = new File(preferenceFolder, category + EXT);

@@ -37,8 +37,9 @@ import org.osgi.service.prefs.BackingStoreException;
 import com.onpositive.prefeditor.PrefEditorPlugin;
 import com.onpositive.prefeditor.dialogs.FolderSelectionDialog;
 import com.onpositive.prefeditor.dialogs.NewPreferenceDialog;
+import com.onpositive.prefeditor.model.IPreferenceProvider;
 import com.onpositive.prefeditor.model.KeyValue;
-import com.onpositive.prefeditor.model.PreferenceProvider;
+import com.onpositive.prefeditor.model.FolderPreferenceProvider;
 import com.onpositive.prefeditor.views.PrefsLabelProvider.Column;
 
 import static com.onpositive.prefeditor.PrefConstants.*;
@@ -188,7 +189,7 @@ public class PreferenceView extends ViewPart {
         viewerColumn.setEditingSupport(new PrefValueEditingSupport(viewer));
         
         folderPath = getInitialFolder();
-		viewer.setInput(new PreferenceProvider(folderPath));
+		viewer.setInput(new FolderPreferenceProvider(folderPath));
 		setViewerTitle(folderPath);
 
         viewer.addSelectionChangedListener(new ISelectionChangedListener() {
@@ -260,13 +261,13 @@ public class PreferenceView extends ViewPart {
 	
 	protected void reloadPrefs() {
 		TreePath[] paths = viewer.getExpandedTreePaths();
-		viewer.setInput(new PreferenceProvider(folderPath));
+		viewer.setInput(new FolderPreferenceProvider(folderPath));
 		viewer.setExpandedTreePaths(paths);
 	}
 	
 	protected void folderChoosed(String folderPath) {
 		this.folderPath = folderPath;
-		viewer.setInput(new PreferenceProvider(folderPath));
+		viewer.setInput(new FolderPreferenceProvider(folderPath));
 		IEclipsePreferences node = ConfigurationScope.INSTANCE.getNode(PrefEditorPlugin.PLUGIN_ID);
 		node.put(CHOOSED_FOLDER_PREF, folderPath);
 		try {
@@ -356,14 +357,14 @@ public class PreferenceView extends ViewPart {
 			@Override
 			public void run() {
 				Object input = viewer.getInput();
-				if (input instanceof PreferenceProvider) {
+				if (input instanceof IPreferenceProvider) {
 					ISelection selection = viewer.getSelection();
 					Object element = ((StructuredSelection) selection).getFirstElement();
 					if (element instanceof KeyValue) {
-						((PreferenceProvider) input).remove(((KeyValue) element));
+						((IPreferenceProvider) input).remove(((KeyValue) element));
 					} else if (element instanceof String) {
 						if (MessageDialog.openQuestion(getSite().getShell(), "Remove preference file", "Remove whole preference file " + String.valueOf(element) + ". Are you sure?")) {
-							((PreferenceProvider) input).removeCategory(String.valueOf(element));	
+							((IPreferenceProvider) input).removeCategory(String.valueOf(element));	
 						}
 					}
 					viewer.refresh();
@@ -389,14 +390,14 @@ public class PreferenceView extends ViewPart {
 					}
 				}
 				Object input = viewer.getInput();
-				if (input instanceof PreferenceProvider) {
-					NewPreferenceDialog dialog = new NewPreferenceDialog(getSite().getShell(), parent, ((PreferenceProvider) input).getFileNames());
+				if (input instanceof IPreferenceProvider) {
+					NewPreferenceDialog dialog = new NewPreferenceDialog(getSite().getShell(), parent, ((FolderPreferenceProvider) input).getFileNames());
 					if (dialog.open() == Dialog.OK) {
 						parent = dialog.getParent();
 						String name = dialog.getName();
 						String value = dialog.getValue();
 						KeyValue newElement = new KeyValue(parent, name, value);
-						((PreferenceProvider) input).add(newElement);
+						((IPreferenceProvider) input).add(newElement);
 						viewer.refresh();
 					}
 				}
@@ -464,13 +465,6 @@ public class PreferenceView extends ViewPart {
 		copyValueAction.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/copy.png"));
 		
 	}
-
-//	private void showMessage(String message) {
-//		MessageDialog.openInformation(
-//			viewer.getControl().getShell(),
-//			"Preferences",
-//			message);
-//	}
 
 	/**
 	 * Passing the focus request to the viewer's control.

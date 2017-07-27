@@ -6,8 +6,8 @@ import org.eclipse.jface.viewers.EditingSupport;
 import org.eclipse.jface.viewers.TextCellEditor;
 import org.eclipse.swt.widgets.Composite;
 
+import com.onpositive.prefeditor.model.IPreferenceProvider;
 import com.onpositive.prefeditor.model.KeyValue;
-import com.onpositive.prefeditor.model.PreferenceProvider;
 
 public class PrefValueEditingSupport extends EditingSupport {
 	
@@ -41,8 +41,8 @@ public class PrefValueEditingSupport extends EditingSupport {
 		if (element instanceof KeyValue) {
 			((KeyValue) element).setValue(String.valueOf(userInputValue));
 			Object input = getViewer().getInput();
-			if (input instanceof PreferenceProvider) {
-				((PreferenceProvider) input).updateValue(((KeyValue) element));
+			if (input instanceof IPreferenceProvider) {
+				((IPreferenceProvider) input).updateValue(((KeyValue) element));
 			}
 			getViewer().update(element, null);
 		}
