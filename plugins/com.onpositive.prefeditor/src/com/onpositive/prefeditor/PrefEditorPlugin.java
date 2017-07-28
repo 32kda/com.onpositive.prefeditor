@@ -2,9 +2,12 @@ package com.onpositive.prefeditor;
 
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
+import org.osgi.service.prefs.BackingStoreException;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -16,6 +19,11 @@ public class PrefEditorPlugin extends AbstractUIPlugin {
 
 	// The shared instance
 	private static PrefEditorPlugin plugin;
+	
+	/**
+	 * Prev selected preference folders preference key
+	 */
+	private static final String PREV_FOLDERS_KEY = "prevFolders";
 	
 	/**
 	 * The constructor
@@ -67,5 +75,21 @@ public class PrefEditorPlugin extends AbstractUIPlugin {
 
 	public static void log(String errorMessage) {
 		getDefault().getLog().log(new Status(IStatus.ERROR,PLUGIN_ID, errorMessage));
+	}
+	
+	public static String[] getPrevFolderChoices() {
+		String prevFolders = InstanceScope.INSTANCE.getNode(PrefEditorPlugin.PLUGIN_ID).get(PREV_FOLDERS_KEY,"");
+		String[] folders = prevFolders.split(";");
+		return folders;
+	}
+	
+	public static void savePrevFolderChoices(String[] choices) {
+		IEclipsePreferences node = InstanceScope.INSTANCE.getNode(PrefEditorPlugin.PLUGIN_ID);
+		node.put(PREV_FOLDERS_KEY, String.join(";", choices));
+		try {
+			node.flush();
+		} catch (BackingStoreException e) {
+			PrefEditorPlugin.log(e);
+		}
 	}
 }

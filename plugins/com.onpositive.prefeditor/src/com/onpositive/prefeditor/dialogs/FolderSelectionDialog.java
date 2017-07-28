@@ -10,8 +10,6 @@ import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationType;
@@ -41,8 +39,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
-import org.osgi.service.prefs.BackingStoreException;
-
 import com.onpositive.prefeditor.PrefEditorPlugin;
 
 /**
@@ -60,10 +56,6 @@ public class FolderSelectionDialog extends Dialog {
 	 * Max recent pref folders to save
 	 */
     private static final int MAX_SAVED = 10;
-	/**
-	 * Зкум ащдвукы зкуаукутсу лун
-	 */
-	private static final String PREV_FOLDERS_KEY = "prevFolders";
 
 	/**
      * The title of the dialog.
@@ -206,7 +198,7 @@ public class FolderSelectionDialog extends Dialog {
     }
 
     private void loadPrevChoices() {
-		String[] prevChoices = loadChoices();
+		String[] prevChoices = PrefEditorPlugin.getPrevFolderChoices();
 		for (String string : prevChoices) {
 			prevFolders.add(string);
 		}
@@ -372,18 +364,8 @@ public class FolderSelectionDialog extends Dialog {
     			prevFolders.add(0,value);
     		}
     	}
-    	saveChoices(prevFolders.stream().limit(MAX_SAVED).toArray(String[]::new));
+    	PrefEditorPlugin.savePrevFolderChoices(prevFolders.stream().limit(MAX_SAVED).toArray(String[]::new));
 	}
-
-	/**
-     * Returns the error message label.
-     * 
-     * @return the error message label
-     * @deprecated use setErrorMessage(String) instead
-     */
-    protected Label getErrorMessageLabel() {
-        return null;
-    }
 
     /**
      * Returns the ok button.
@@ -474,19 +456,4 @@ public class FolderSelectionDialog extends Dialog {
 		return SWT.SINGLE | SWT.BORDER;
 	}
 	
-	protected String[] loadChoices() {
-		String prevFolders = InstanceScope.INSTANCE.getNode(PrefEditorPlugin.PLUGIN_ID).get(PREV_FOLDERS_KEY,"");
-		String[] folders = prevFolders.split(";");
-		return folders;
-	}
-	
-	protected void saveChoices(String[] choices) {
-		IEclipsePreferences node = InstanceScope.INSTANCE.getNode(PrefEditorPlugin.PLUGIN_ID);
-		node.put(PREV_FOLDERS_KEY, String.join(";", choices));
-		try {
-			node.flush();
-		} catch (BackingStoreException e) {
-			PrefEditorPlugin.log(e);
-		}
-	}
 }

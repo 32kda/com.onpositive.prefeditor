@@ -1,48 +1,80 @@
 package com.onpositive.prefeditor.views;
 
 
+import static com.onpositive.prefeditor.PrefConstants.CONFIGURATION_SETTINGS_PATH;
+import static com.onpositive.prefeditor.PrefConstants.WORKSPACE_SETTINGS_PATH;
+
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.ui.handlers.IHandlerActivation;
-import org.eclipse.ui.handlers.IHandlerService;
-import org.eclipse.ui.part.*;
-import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.ConfigurationScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.eclipse.jface.viewers.*;
+import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.ActionContributionItem;
+import org.eclipse.jface.action.IMenuCreator;
+import org.eclipse.jface.action.IMenuListener;
+import org.eclipse.jface.action.IMenuManager;
+import org.eclipse.jface.action.IToolBarManager;
+import org.eclipse.jface.action.MenuManager;
+import org.eclipse.jface.action.Separator;
+import org.eclipse.jface.commands.ActionHandler;
+import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.viewers.AbstractTreeViewer;
+import org.eclipse.jface.viewers.ColumnViewerEditor;
+import org.eclipse.jface.viewers.ColumnViewerEditorActivationEvent;
+import org.eclipse.jface.viewers.ColumnViewerEditorActivationStrategy;
+import org.eclipse.jface.viewers.DoubleClickEvent;
+import org.eclipse.jface.viewers.IDoubleClickListener;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.ISelectionChangedListener;
+import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.ITreeContentProvider;
+import org.eclipse.jface.viewers.SelectionChangedEvent;
+import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.viewers.TreePath;
+import org.eclipse.jface.viewers.TreeViewer;
+import org.eclipse.jface.viewers.TreeViewerColumn;
+import org.eclipse.jface.viewers.TreeViewerEditor;
+import org.eclipse.jface.viewers.ViewerCell;
+import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.jface.window.Window;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.jface.action.*;
-import org.eclipse.jface.commands.ActionHandler;
-import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.ui.*;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
-import org.eclipse.swt.SWT;
+import org.eclipse.ui.IActionBars;
+import org.eclipse.ui.ISharedImages;
+import org.eclipse.ui.IWorkbenchCommandConstants;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.handlers.IHandlerActivation;
+import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.part.ViewPart;
+import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.service.prefs.BackingStoreException;
 
 import com.onpositive.prefeditor.PrefEditorPlugin;
 import com.onpositive.prefeditor.dialogs.FolderSelectionDialog;
 import com.onpositive.prefeditor.dialogs.NewPreferenceDialog;
+import com.onpositive.prefeditor.model.FolderPreferenceProvider;
 import com.onpositive.prefeditor.model.IPreferenceProvider;
 import com.onpositive.prefeditor.model.KeyValue;
-import com.onpositive.prefeditor.model.FolderPreferenceProvider;
 import com.onpositive.prefeditor.views.PrefsLabelProvider.Column;
-
-import static com.onpositive.prefeditor.PrefConstants.*;
 
 
 /**
@@ -64,6 +96,22 @@ import static com.onpositive.prefeditor.PrefConstants.*;
  */
 
 public class PreferenceView extends ViewPart {
+	
+	private class ChooseFolderAction extends Action {
+
+		private String folderPath;
+
+		public ChooseFolderAction(String folderPath) {
+			this.folderPath = folderPath;
+			setText(getLabel(folderPath, 100));
+		}
+		
+		@Override
+		public void run() {
+			folderChoosed(folderPath);
+		}
+
+	}
 
 	private static final String CHOOSED_FOLDER_PREF = "choosedFolder";
 	
@@ -218,28 +266,33 @@ public class PreferenceView extends ViewPart {
 			titleLabel.setText("Select folder to view preferences");
 			return;
 		} 
-		folderPath = folderPath.trim().replace('\\','/');
-		if (folderPath.endsWith("/")) {
-			folderPath = folderPath.substring(0, folderPath.length() - 1);
-		}
-		if (folderPath.endsWith(WORKSPACE_SETTINGS_PATH)) {
-			String path = folderPath.substring(0, folderPath.length() - WORKSPACE_SETTINGS_PATH.length());
-			String name = new Path(path).lastSegment();
-			titleLabel.setText("Workspace: " + name);
-		} else if (folderPath.endsWith(CONFIGURATION_SETTINGS_PATH)) {
-			String path = folderPath.substring(0, folderPath.length() - CONFIGURATION_SETTINGS_PATH.length());
-			String name = new Path(path).lastSegment();
-			titleLabel.setText("Installation: " + name);
-		} else {
-			String title = folderPath;
-			int len = title.length();
-			if (len > MAX_TITLE_LENGTH) {
-				titleLabel.setToolTipText(title);
-				title = "..." + title.substring(len - MAX_TITLE_LENGTH, len);
+		titleLabel.setText(getLabel(folderPath, MAX_TITLE_LENGTH));
+	}
+	
+	protected String getLabel(String folderPath, int maxLength) {
+		if (folderPath != null) {
+			folderPath = folderPath.trim().replace('\\','/');
+			if (folderPath.endsWith("/")) {
+				folderPath = folderPath.substring(0, folderPath.length() - 1);
 			}
-			titleLabel.setText(title);
+			if (folderPath.endsWith(WORKSPACE_SETTINGS_PATH)) {
+				String path = folderPath.substring(0, folderPath.length() - WORKSPACE_SETTINGS_PATH.length());
+				String name = new Path(path).lastSegment();
+				return "Workspace: " + name;
+			} else if (folderPath.endsWith(CONFIGURATION_SETTINGS_PATH)) {
+				String path = folderPath.substring(0, folderPath.length() - CONFIGURATION_SETTINGS_PATH.length());
+				String name = new Path(path).lastSegment();
+				return "Installation: " + name;
+			} else {
+				String title = folderPath;
+				int len = title.length();
+				if (len > maxLength) {
+					title = "..." + title.substring(len - maxLength, len);
+				}
+				return title;
+			}
 		}
-		
+		return folderPath;
 	}
 
 	protected String getInitialFolder() {
@@ -327,7 +380,7 @@ public class PreferenceView extends ViewPart {
 	}
 
 	private void makeActions() {
-		chooseFolderAction = new Action() {
+		chooseFolderAction = new Action("Choose pref folder", Action.AS_DROP_DOWN_MENU) {
 			public void run() {
 				FolderSelectionDialog dialog = new FolderSelectionDialog(getViewSite().getShell(), folderPath);
 				if (dialog.open() == Window.OK) {
@@ -340,6 +393,52 @@ public class PreferenceView extends ViewPart {
 		chooseFolderAction.setToolTipText("Open preferences list from workspace, installation or particular folder");
 		chooseFolderAction.setImageDescriptor(PlatformUI.getWorkbench().getSharedImages().
 			getImageDescriptor(ISharedImages.IMG_OBJ_FOLDER));
+		
+		chooseFolderAction.setMenuCreator(new IMenuCreator() {
+			
+	        private Menu menu;
+
+			private List<ActionContributionItem> createDropDownMenuItems() {
+	                return Arrays.asList(PrefEditorPlugin.getPrevFolderChoices()).stream()
+	                	.map(folderPath -> new ActionContributionItem(new ChooseFolderAction(folderPath)))
+	                	.collect(Collectors.toList()); 
+	        }
+
+	        /* (non-Javadoc)
+	         * @see org.eclipse.jface.action.IMenuCreator#getMenu(org.eclipse.swt.widgets.Control)
+	         */
+	        public Menu getMenu(Control parent) {
+	        	if (menu != null) {
+	        		menu.dispose();
+	        	}
+	        	menu = new Menu(parent);
+	        	createDropDownMenuItems().stream().forEach(
+	        			item -> item.fill(menu,-1));
+	            return menu;
+	        }
+
+	        /* (non-Javadoc)
+	         * @see org.eclipse.jface.action.IMenuCreator#getMenu(org.eclipse.swt.widgets.Menu)
+	         */
+	        public Menu getMenu(Menu parent) {
+	        	if (menu != null) {
+	        		menu.dispose();
+	        	}
+	        	menu = new Menu(parent);
+	            createDropDownMenuItems().stream().forEach(
+	        			item -> item.fill(menu,-1));
+	            return menu;
+	        }
+
+	        /* (non-Javadoc)
+	         * @see org.eclipse.jface.action.IMenuCreator#dispose()
+	         */
+	        public void dispose() {
+	        	if (menu != null) {
+	        		menu.dispose();
+	        	}
+	        }
+		});
 		
 		viewModeAction = new Action("Hierarchical view", SWT.TOGGLE) {
 			public void run() {
