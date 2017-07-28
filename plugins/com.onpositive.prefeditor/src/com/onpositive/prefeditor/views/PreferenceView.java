@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.ConfigurationScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
@@ -74,6 +73,7 @@ import com.onpositive.prefeditor.dialogs.NewPreferenceDialog;
 import com.onpositive.prefeditor.model.FolderPreferenceProvider;
 import com.onpositive.prefeditor.model.IPreferenceProvider;
 import com.onpositive.prefeditor.model.KeyValue;
+import com.onpositive.prefeditor.ui.iternal.PrefUIUtil;
 import com.onpositive.prefeditor.views.PrefsLabelProvider.Column;
 
 
@@ -103,7 +103,7 @@ public class PreferenceView extends ViewPart {
 
 		public ChooseFolderAction(String folderPath) {
 			this.folderPath = folderPath;
-			setText(getLabel(folderPath, 100));
+			setText(PrefUIUtil.getFolderLabel(folderPath, 100));
 		}
 		
 		@Override
@@ -266,35 +266,9 @@ public class PreferenceView extends ViewPart {
 			titleLabel.setText("Select folder to view preferences");
 			return;
 		} 
-		titleLabel.setText(getLabel(folderPath, MAX_TITLE_LENGTH));
+		titleLabel.setText(PrefUIUtil.getFolderLabel(folderPath, MAX_TITLE_LENGTH));
 	}
 	
-	protected String getLabel(String folderPath, int maxLength) {
-		if (folderPath != null) {
-			folderPath = folderPath.trim().replace('\\','/');
-			if (folderPath.endsWith("/")) {
-				folderPath = folderPath.substring(0, folderPath.length() - 1);
-			}
-			if (folderPath.endsWith(WORKSPACE_SETTINGS_PATH)) {
-				String path = folderPath.substring(0, folderPath.length() - WORKSPACE_SETTINGS_PATH.length());
-				String name = new Path(path).lastSegment();
-				return "Workspace: " + name;
-			} else if (folderPath.endsWith(CONFIGURATION_SETTINGS_PATH)) {
-				String path = folderPath.substring(0, folderPath.length() - CONFIGURATION_SETTINGS_PATH.length());
-				String name = new Path(path).lastSegment();
-				return "Installation: " + name;
-			} else {
-				String title = folderPath;
-				int len = title.length();
-				if (len > maxLength) {
-					title = "..." + title.substring(len - maxLength, len);
-				}
-				return title;
-			}
-		}
-		return folderPath;
-	}
-
 	protected String getInitialFolder() {
 		return ConfigurationScope.INSTANCE.getNode(PrefEditorPlugin.PLUGIN_ID).get(CHOOSED_FOLDER_PREF, getDefaultFolder());
 	}

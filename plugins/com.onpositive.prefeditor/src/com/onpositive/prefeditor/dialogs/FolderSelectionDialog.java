@@ -25,6 +25,7 @@ import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
@@ -39,7 +40,9 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+
 import com.onpositive.prefeditor.PrefEditorPlugin;
+import com.onpositive.prefeditor.ui.iternal.PrefUIUtil;
 
 /**
  * A simple input dialog for soliciting an input string from the user.
@@ -50,6 +53,7 @@ import com.onpositive.prefeditor.PrefEditorPlugin;
  */
 public class FolderSelectionDialog extends Dialog {
 	
+	private static final int MAX_FOLDER_PATH_LEN = 120;
 	private static final String CONFIG_LOCATION_ATTR = "configLocation";
 	private static final String WORKSPACE_LOC_VAR = "${workspace_loc}";
 	/**
@@ -231,6 +235,15 @@ public class FolderSelectionDialog extends Dialog {
 				valueSelected(valueFromSelection(event.getSelection())); 
 			}
 		});
+        viewer.setLabelProvider(new LabelProvider() {
+        	@Override
+        	public String getText(Object element) {
+        		if (element instanceof String) {
+        			return PrefUIUtil.getFolderLabel((String) element, MAX_FOLDER_PATH_LEN);
+        		}
+        		return super.getText(element);
+        	}
+        });
         viewer.getControl().setLayoutData(new GridData(GridData.GRAB_HORIZONTAL
                 | GridData.HORIZONTAL_ALIGN_FILL));
         
