@@ -8,11 +8,10 @@ import org.eclipse.jface.viewers.Viewer;
 
 import com.onpositive.prefeditor.model.IPreferenceProvider;
 import com.onpositive.prefeditor.model.KeyValue;
-import com.onpositive.prefeditor.model.FolderPreferenceProvider;
 
 public class PrefsContentProvider implements ITreeContentProvider {
 	
-	protected FolderPreferenceProvider provider;
+	protected IPreferenceProvider provider;
 	
 	protected boolean treeMode = true;
 
@@ -24,7 +23,7 @@ public class PrefsContentProvider implements ITreeContentProvider {
 	@Override
 	public void inputChanged(Viewer paramViewer, Object oldInput, Object newInput) {
 		if (newInput instanceof IPreferenceProvider) {
-			provider = (FolderPreferenceProvider) newInput;
+			provider = (IPreferenceProvider) newInput;
 		}
 	}
 
@@ -40,10 +39,10 @@ public class PrefsContentProvider implements ITreeContentProvider {
 	public Object[] getElements(Object paramObject) {
 		if (provider != null) { 
 			if (treeMode) {
-				return provider.getFileNames();
+				return provider.getNodeNames();
 			} else {
 				List<KeyValue> result = new ArrayList<>();
-				String[] fileNames = provider.getFileNames();
+				String[] fileNames = provider.getNodeNames();
 				for (String name : fileNames) {
 					KeyValue[] prefs = provider.getPrefsFor(name);
 					for (KeyValue keyValue : prefs) {

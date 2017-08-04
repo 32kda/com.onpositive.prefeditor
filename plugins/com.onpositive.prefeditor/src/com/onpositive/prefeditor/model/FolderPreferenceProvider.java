@@ -58,7 +58,7 @@ public class FolderPreferenceProvider implements IPreferenceProvider {
 		}
 	}
 	
-	public String[] getFileNames() {
+	public String[] getNodeNames() {
 		return propFiles.keySet().stream().sorted().toArray(String[]::new);
 	}
 	

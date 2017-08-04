@@ -13,4 +13,6 @@ public interface IPreferenceProvider {
 
 	public abstract void removeCategory(String category);
 
+	public abstract String[] getNodeNames();
+
 }

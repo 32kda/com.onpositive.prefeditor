@@ -290,9 +290,11 @@ public class NewPreferenceDialog extends Dialog {
         String name = nameText.getText().trim();
         if (parent.isEmpty()) {
         	errorMessage = "Parent node/file name should be specified";
-        } else if (!FQCN.matcher(parent).matches()) {
-        	errorMessage = "Parent should be valid plugin name, e.g. 'ab.cd.ef'";
-        } else if (name.isEmpty()) {
+        } 
+//        else if (!FQCN.matcher(parent).matches()) {
+//        	errorMessage = "Parent should be valid plugin name, e.g. ab.cd.ef";
+//        } 
+        else if (name.isEmpty()) {
         	errorMessage = "Preference name should be specified";
         }
         // Bug 16256: important not to treat "" (blank error) the same as null

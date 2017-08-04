@@ -1,61 +1,36 @@
 package com.onpositive.prefeditor.views;
 
 
-import static com.onpositive.prefeditor.PrefConstants.CONFIGURATION_SETTINGS_PATH;
-import static com.onpositive.prefeditor.PrefConstants.WORKSPACE_SETTINGS_PATH;
-
-import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.FileUtils;
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.preferences.ConfigurationScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IMenuCreator;
-import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
-import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.commands.ActionHandler;
-import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.viewers.AbstractTreeViewer;
-import org.eclipse.jface.viewers.ColumnViewerEditor;
-import org.eclipse.jface.viewers.ColumnViewerEditorActivationEvent;
-import org.eclipse.jface.viewers.ColumnViewerEditorActivationStrategy;
-import org.eclipse.jface.viewers.DoubleClickEvent;
-import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.ISelectionChangedListener;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.ITreeContentProvider;
-import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.jface.viewers.TreePath;
-import org.eclipse.jface.viewers.TreeViewer;
-import org.eclipse.jface.viewers.TreeViewerColumn;
-import org.eclipse.jface.viewers.TreeViewerEditor;
-import org.eclipse.jface.viewers.ViewerCell;
 import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.CTabFolder;
+import org.eclipse.swt.custom.CTabItem;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.FocusEvent;
-import org.eclipse.swt.events.FocusListener;
-import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.ISharedImages;
@@ -69,12 +44,8 @@ import org.osgi.service.prefs.BackingStoreException;
 
 import com.onpositive.prefeditor.PrefEditorPlugin;
 import com.onpositive.prefeditor.dialogs.FolderSelectionDialog;
-import com.onpositive.prefeditor.dialogs.NewPreferenceDialog;
-import com.onpositive.prefeditor.model.FolderPreferenceProvider;
-import com.onpositive.prefeditor.model.IPreferenceProvider;
 import com.onpositive.prefeditor.model.KeyValue;
 import com.onpositive.prefeditor.ui.iternal.PrefUIUtil;
-import com.onpositive.prefeditor.views.PrefsLabelProvider.Column;
 
 
 /**
@@ -113,16 +84,13 @@ public class PreferenceView extends ViewPart {
 
 	}
 
-	private static final String CHOOSED_FOLDER_PREF = "choosedFolder";
+	private static final String CHOOSED_PAGE_PREF = "choosedPage";
 	
-	private static final int MAX_TITLE_LENGTH = 40;
-
 	/**
 	 * The ID of the view as specified by the extension.
 	 */
 	public static final String ID = "com.onpositive.prefeditor.views.PreferenceView";
 
-	private TreeViewer viewer;
 	private Action chooseFolderAction;
 	private Action viewModeAction;
 	private Action removeAction;
@@ -134,15 +102,11 @@ public class PreferenceView extends ViewPart {
 	
 	private Action copyValueAction;
 
-	private String folderPath;
-
-	private Label titleLabel;
-
-	private PrefsContentProvider contentProvider;
-
-	private PrefsLabelProvider keyLabelProvider;
-
 	private IHandlerActivation copyHandlerActivation;
+
+	private CTabFolder tabFolder;
+	
+	private ViewerPage activePage;
 
 	class NameSorter extends ViewerSorter {
 	}
@@ -158,164 +122,64 @@ public class PreferenceView extends ViewPart {
 	 * to create the viewer and initialize it.
 	 */
 	public void createPartControl(Composite parent) {
-		parent.setLayout(new GridLayout());
-		titleLabel = new Label(parent, SWT.NONE);
-		GridDataFactory.swtDefaults().applyTo(titleLabel);
+		parent.setLayout(new FillLayout());
 		
-		viewer = new TreeViewer(parent, SWT.FULL_SELECTION);
-        contentProvider = new PrefsContentProvider();
-		viewer.setContentProvider(contentProvider);
-        viewer.getTree().setHeaderVisible(true);
-        viewer.getTree().setLinesVisible(true);
-        GridDataFactory.fillDefaults().grab(true, true).applyTo(viewer.getControl());
-        
-        viewer.getTree().addFocusListener(new FocusListener() {
-			
-			@Override
-			public void focusLost(FocusEvent arg0) {
-				final IHandlerService handlerService = getHandlerService();
-				if (copyHandlerActivation != null) {
-					handlerService.deactivateHandler(copyHandlerActivation);
-				}
-			}
-			
-			@Override
-			public void focusGained(FocusEvent arg0) {
-		        final IHandlerService handlerService = getHandlerService();
-		        copyHandlerActivation = handlerService
-		        		.activateHandler(IWorkbenchCommandConstants.EDIT_COPY,
-		        		new ActionHandler(copyAction));
-			}
+		this.tabFolder = new CTabFolder(parent, SWT.BOTTOM);
+        createFSTab(tabFolder);
+        createPlatformTab(tabFolder);
+        tabFolder.addSelectionListener(new SelectionAdapter() {
+        	
+        	@Override
+        	public void widgetSelected(SelectionEvent e) {
+        		CTabItem selection = tabFolder.getSelection();
+        		if (selection != null) {
+        			setActiveViewerPage((ViewerPage) selection.getControl());
+        		}
+        		saveChoosedPage(tabFolder.getSelectionIndex());
+        	}
+        	
 		});
+        int choosedPage = loadChoosedPage();
+        tabFolder.setSelection(choosedPage);
+        activePage = (ViewerPage) tabFolder.getItem(choosedPage).getControl();
         
-        viewer.addDoubleClickListener(new IDoubleClickListener() {
-			
-			@Override
-			public void doubleClick(final DoubleClickEvent event) {
-				final IStructuredSelection selection = (IStructuredSelection) event
-						.getSelection();
-				if (selection == null || selection.isEmpty())
-					return;
-
-				final Object sel = selection.getFirstElement();
-
-				final ITreeContentProvider provider = (ITreeContentProvider) viewer
-						.getContentProvider();
-
-				if (!provider.hasChildren(sel))
-					return;
-
-				if (viewer.getExpandedState(sel))
-					viewer.collapseToLevel(sel,
-							AbstractTreeViewer.ALL_LEVELS);
-				else
-					viewer.expandToLevel(sel, 1);
-			}
-		});
-        
-        ColumnViewerEditorActivationStrategy strategy = new ColumnViewerEditorActivationStrategy(viewer) {
-    		@Override
-    		protected boolean isEditorActivationEvent(ColumnViewerEditorActivationEvent event) {
-    			return event.eventType == ColumnViewerEditorActivationEvent.MOUSE_DOUBLE_CLICK_SELECTION &&
-    				   event.getSource() instanceof ViewerCell &&
-    				   ((ViewerCell) event.getSource()).getColumnIndex() == 1;
-    				   
-    		}
-    	};
-    	TreeViewerEditor.create(viewer, null, strategy, ColumnViewerEditor.DEFAULT);
-
-        TreeViewerColumn viewerColumn = new TreeViewerColumn(viewer, SWT.NONE);
-        viewerColumn.getColumn().setWidth(300);
-        viewerColumn.getColumn().setText("Key");
-        keyLabelProvider = new PrefsLabelProvider(Column.KEY);
-		viewerColumn.setLabelProvider(keyLabelProvider);
-        
-        viewerColumn = new TreeViewerColumn(viewer, SWT.NONE);
-        viewerColumn.getColumn().setWidth(300);
-        viewerColumn.getColumn().setText("Value");
-        viewerColumn.setLabelProvider(new PrefsLabelProvider(Column.VALUE));
-        viewerColumn.setEditingSupport(new PrefValueEditingSupport(viewer));
-        
-        folderPath = getInitialFolder();
-		viewer.setInput(new FolderPreferenceProvider(folderPath));
-		setViewerTitle(folderPath);
-
-        viewer.addSelectionChangedListener(new ISelectionChangedListener() {
-			
-			@Override
-			public void selectionChanged(
-					SelectionChangedEvent event) {
-				ISelection selection = event.getSelection();
-				removeAction.setEnabled(!selection.isEmpty());
-				copyAction.setEnabled(!selection.isEmpty());
-				copyValueAction.setEnabled(!selection.isEmpty() && ((StructuredSelection) selection).getFirstElement() instanceof KeyValue);
-			}
-		});
-		
+//        GridData gridData = new GridData(SWT.FILL,SWT.TOP,true,false);
+//        tabFolder.setLayoutData(gridData);
+//        GridDataFactory.fillDefaults().grab(true, false).applyTo(tabFolder);
 		// Create the help context id for the viewer's control
-		PlatformUI.getWorkbench().getHelpSystem().setHelp(viewer.getControl(), "com.onpositive.prefeditor.viewer");
+//		PlatformUI.getWorkbench().getHelpSystem().setHelp(viewer.getControl(), "com.onpositive.prefeditor.viewer");
 		makeActions();
-		hookContextMenu();
 //		hookDoubleClickAction();
 		contributeToActionBars();
 	}
 
-	private void setViewerTitle(String folderPath) {
-		titleLabel.setToolTipText("");
-		if (folderPath == null || folderPath.isEmpty()) {
-			titleLabel.setText("Select folder to view preferences");
-			return;
-		} 
-		titleLabel.setText(PrefUIUtil.getFolderLabel(folderPath, MAX_TITLE_LENGTH));
+	protected void setActiveViewerPage(ViewerPage viewerPage) {
+		activePage = viewerPage;
+		updateActions(activePage.getSelection());
 	}
 	
-	protected String getInitialFolder() {
-		return ConfigurationScope.INSTANCE.getNode(PrefEditorPlugin.PLUGIN_ID).get(CHOOSED_FOLDER_PREF, getDefaultFolder());
+	protected ViewerPage getActiveViewerPage() {
+		return activePage;
 	}
 
-	protected String getDefaultFolder() {
-		File folder = new File(ResourcesPlugin.getWorkspace().getRoot().getLocation().toOSString(), WORKSPACE_SETTINGS_PATH);
-		if (folder.isDirectory()) {
-			return folder.getAbsolutePath();
-		}
-		
-		folder = FileUtils.toFile(Platform.getInstallLocation().getURL());
-		if (folder.isDirectory()) {
-			return new File(folder, CONFIGURATION_SETTINGS_PATH).getAbsolutePath();
-		}
-		return "";
-	}
-	
-	protected void reloadPrefs() {
-		TreePath[] paths = viewer.getExpandedTreePaths();
-		viewer.setInput(new FolderPreferenceProvider(folderPath));
-		viewer.setExpandedTreePaths(paths);
-	}
-	
-	protected void folderChoosed(String folderPath) {
-		this.folderPath = folderPath;
-		viewer.setInput(new FolderPreferenceProvider(folderPath));
-		IEclipsePreferences node = ConfigurationScope.INSTANCE.getNode(PrefEditorPlugin.PLUGIN_ID);
-		node.put(CHOOSED_FOLDER_PREF, folderPath);
-		try {
-			node.flush();
-		} catch (BackingStoreException e) {
-			PrefEditorPlugin.log(e);
-		}
-		setViewerTitle(folderPath);
+	private void createPlatformTab(CTabFolder tabFolder) {
+		CTabItem item = new CTabItem(tabFolder, SWT.NONE);
+		item.setText("Platform");
+		PlatformViewerPage page = new PlatformViewerPage(tabFolder, this);
+		item.setControl(page);
 	}
 
-	private void hookContextMenu() {
-		MenuManager menuMgr = new MenuManager("#PopupMenu");
-		menuMgr.setRemoveAllWhenShown(true);
-		menuMgr.addMenuListener(new IMenuListener() {
-			public void menuAboutToShow(IMenuManager manager) {
-				PreferenceView.this.fillContextMenu(manager);
-			}
-		});
-		Menu menu = menuMgr.createContextMenu(viewer.getControl());
-		viewer.getControl().setMenu(menu);
-		getSite().registerContextMenu(menuMgr, viewer);
+	private void createFSTab(CTabFolder tabFolder) {
+		CTabItem item = new CTabItem(tabFolder, SWT.NONE);
+		item.setText("Folder");
+		FolderViewerPage page = new FolderViewerPage(tabFolder, this);
+		item.setControl(page);
+	}
+
+	public void folderChoosed(String folderPath) {
+		if (activePage instanceof FolderViewerPage) {
+			((FolderViewerPage) activePage).folderChoosed(folderPath);
+		}
 	}
 
 	private void contributeToActionBars() {
@@ -331,7 +195,7 @@ public class PreferenceView extends ViewPart {
 		manager.add(addAction);
 	}
 
-	private void fillContextMenu(IMenuManager manager) {
+	public void fillContextMenu(IMenuManager manager) {
 		manager.add(addAction);
 		Action[] enabledActions = new Action[] {removeAction, copyAction, copyValueAction};
 		for (Action action : enabledActions) {
@@ -353,13 +217,34 @@ public class PreferenceView extends ViewPart {
 		manager.add(copyAction);
 	}
 
+	protected void saveChoosedPage(int selectionIndex) {
+		IEclipsePreferences node = InstanceScope.INSTANCE.getNode(PrefEditorPlugin.PLUGIN_ID);
+		node.putInt(CHOOSED_PAGE_PREF, selectionIndex);
+		try {
+			node.flush();
+		} catch (BackingStoreException e) {
+			PrefEditorPlugin.log(e);
+		}
+	}
+	
+	protected int loadChoosedPage() {
+		IEclipsePreferences node = InstanceScope.INSTANCE.getNode(PrefEditorPlugin.PLUGIN_ID);
+		return node.getInt(CHOOSED_PAGE_PREF, 0);
+	}
+
+
 	private void makeActions() {
 		chooseFolderAction = new Action("Choose pref folder", Action.AS_DROP_DOWN_MENU) {
 			public void run() {
-				FolderSelectionDialog dialog = new FolderSelectionDialog(getViewSite().getShell(), folderPath);
-				if (dialog.open() == Window.OK) {
-					String folderPath = dialog.getValue();
-					folderChoosed(folderPath);
+				if (activePage instanceof FolderViewerPage) {
+					String folderPath = ((FolderViewerPage) activePage).getFolderPath();
+					FolderSelectionDialog dialog = new FolderSelectionDialog(getViewSite().getShell(), folderPath);
+					if (dialog.open() == Window.OK) {
+						ViewerPage activeViewerPage = getActiveViewerPage();
+						if (activeViewerPage instanceof FolderViewerPage) {
+							((FolderViewerPage) activeViewerPage).folderChoosed(dialog.getValue());
+						}
+					}
 				}
 			}
 		};
@@ -416,9 +301,7 @@ public class PreferenceView extends ViewPart {
 		
 		viewModeAction = new Action("Hierarchical view", SWT.TOGGLE) {
 			public void run() {
-				contentProvider.setTreeMode(viewModeAction.isChecked());
-				keyLabelProvider.setTreeMode(viewModeAction.isChecked());
-				viewer.refresh();
+				getActiveViewerPage().setTreeMode(viewModeAction.isChecked());
 			}
 		};
 		viewModeAction.setChecked(true);
@@ -429,19 +312,7 @@ public class PreferenceView extends ViewPart {
 		removeAction = new Action() {
 			@Override
 			public void run() {
-				Object input = viewer.getInput();
-				if (input instanceof IPreferenceProvider) {
-					ISelection selection = viewer.getSelection();
-					Object element = ((StructuredSelection) selection).getFirstElement();
-					if (element instanceof KeyValue) {
-						((IPreferenceProvider) input).remove(((KeyValue) element));
-					} else if (element instanceof String) {
-						if (MessageDialog.openQuestion(getSite().getShell(), "Remove preference file", "Remove whole preference file " + String.valueOf(element) + ". Are you sure?")) {
-							((IPreferenceProvider) input).removeCategory(String.valueOf(element));	
-						}
-					}
-					viewer.refresh();
-				}
+				getActiveViewerPage().removeSelected();
 			}
 			
 		};
@@ -452,28 +323,7 @@ public class PreferenceView extends ViewPart {
 		addAction = new Action() {
 			@Override
 			public void run() {
-				String parent = null;
-				ISelection selection = viewer.getSelection();
-				if (!selection.isEmpty()) {
-					Object element = ((StructuredSelection) selection).getFirstElement();
-					if (element instanceof KeyValue) {
-						parent = ((KeyValue) element).getParentNode();
-					} else {
-						parent = String.valueOf(element);
-					}
-				}
-				Object input = viewer.getInput();
-				if (input instanceof IPreferenceProvider) {
-					NewPreferenceDialog dialog = new NewPreferenceDialog(getSite().getShell(), parent, ((FolderPreferenceProvider) input).getFileNames());
-					if (dialog.open() == Dialog.OK) {
-						parent = dialog.getParent();
-						String name = dialog.getName();
-						String value = dialog.getValue();
-						KeyValue newElement = new KeyValue(parent, name, value);
-						((IPreferenceProvider) input).add(newElement);
-						viewer.refresh();
-					}
-				}
+				getActiveViewerPage().addPreference();
 			}
 			
 		};
@@ -485,7 +335,7 @@ public class PreferenceView extends ViewPart {
 			
 			@Override
 			public void run() {
-				reloadPrefs();
+				getActiveViewerPage().reloadPrefs();
 			}
 			
 		};
@@ -496,20 +346,8 @@ public class PreferenceView extends ViewPart {
 		copyAction = new Action() {
 			@Override
 			public void run() {
-				String text = null;
-				ISelection selection = viewer.getSelection();
-				if (!selection.isEmpty()) {
-					Object element = ((StructuredSelection) selection).getFirstElement();
-					if (element instanceof KeyValue) {
-						text = ((KeyValue) element).getKey();
-					} else {
-						text = String.valueOf(element);
-					}
-					textToClipboard(text);
-				}			
-				
+				getActiveViewerPage().copyKey();
 			}
-			
 		};
 		
 		copyAction.setText("Copy key/name");
@@ -519,18 +357,8 @@ public class PreferenceView extends ViewPart {
 		copyValueAction = new Action() {
 			@Override
 			public void run() {
-				String text = null;
-				ISelection selection = viewer.getSelection();
-				if (!selection.isEmpty()) {
-					Object element = ((StructuredSelection) selection).getFirstElement();
-					if (element instanceof KeyValue) {
-						text = ((KeyValue) element).getValue();
-						textToClipboard(text);
-					} 
-				}			
-				
+				getActiveViewerPage().copyValue();
 			}
-			
 		};
 		
 		copyValueAction.setText("Copy value");
@@ -543,7 +371,7 @@ public class PreferenceView extends ViewPart {
 	 * Passing the focus request to the viewer's control.
 	 */
 	public void setFocus() {
-		viewer.getControl().setFocus();
+		getActiveViewerPage().setViewerFocus();
 	}
 
 	protected IHandlerService getHandlerService() {
@@ -556,6 +384,28 @@ public class PreferenceView extends ViewPart {
 		TextTransfer textTransfer = TextTransfer.getInstance();
 		clipboard.setContents(new String[]{text}, new Transfer[]{textTransfer});
 		clipboard.dispose();
+	}
+
+	public void updateActions(ISelection selection) {
+		chooseFolderAction.setEnabled(activePage instanceof FolderViewerPage);
+		
+		removeAction.setEnabled(!selection.isEmpty());
+		copyAction.setEnabled(!selection.isEmpty());
+		copyValueAction.setEnabled(!selection.isEmpty() && ((StructuredSelection) selection).getFirstElement() instanceof KeyValue);
+	}
+
+	public void viewerFocusLost(FocusEvent event) {
+		final IHandlerService handlerService = getHandlerService();
+		if (copyHandlerActivation != null) {
+			handlerService.deactivateHandler(copyHandlerActivation);
+		}
+	}
+
+	public void viewerFocusGained(FocusEvent event) {
+		final IHandlerService handlerService = getHandlerService();
+        copyHandlerActivation = handlerService
+        		.activateHandler(IWorkbenchCommandConstants.EDIT_COPY,
+        		new ActionHandler(copyAction));
 	}
 	
 

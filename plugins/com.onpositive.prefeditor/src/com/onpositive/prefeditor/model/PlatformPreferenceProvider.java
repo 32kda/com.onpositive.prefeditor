@@ -12,6 +12,8 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IPreferenceNodeVisitor;
 import org.eclipse.core.runtime.preferences.IScopeContext;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.swt.widgets.Display;
 import org.osgi.service.prefs.BackingStoreException;
 
 import com.onpositive.prefeditor.PrefEditorPlugin;
@@ -70,6 +72,11 @@ public class PlatformPreferenceProvider implements IPreferenceProvider {
 	}
 	
 	@Override
+	public String[] getNodeNames() {
+		return preferenceEntries.keySet().stream().sorted().toArray(String[]::new);
+	}
+
+	@Override
 	public KeyValue[] getPrefsFor(String categoryName) {
 		List<KeyValue> prefs = preferenceEntries.get(categoryName);
 		if (prefs != null)
@@ -93,6 +100,7 @@ public class PlatformPreferenceProvider implements IPreferenceProvider {
 		try {
 			node.flush();
 		} catch (BackingStoreException e) {
+			MessageDialog.openError(Display.getDefault().getActiveShell(), "Error saving preference", "Error saving preference value for node " + node.name() + " . Check error log for details");
 			PrefEditorPlugin.log(e);
 		}
 	}
@@ -138,6 +146,11 @@ public class PlatformPreferenceProvider implements IPreferenceProvider {
 			
 		}
 		return null;
+	}
+
+	public void reload() {
+		preferenceEntries.clear();
+		loadPrefs();
 	}
 
 }
