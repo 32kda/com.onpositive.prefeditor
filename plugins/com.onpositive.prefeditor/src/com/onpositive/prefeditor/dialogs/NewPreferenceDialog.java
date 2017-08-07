@@ -4,6 +4,7 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.resource.StringConverter;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
@@ -51,17 +52,17 @@ public class NewPreferenceDialog extends Dialog {
     /**
      * Preference parent
      */
-    private String parent = "";//$NON-NLS-1$
+    protected String parent = "";//$NON-NLS-1$
     
     /**
      * Preference name
      */
-    private String name = "";//$NON-NLS-1$
+    protected String name = "";//$NON-NLS-1$
 
     /**
      * Preference value
      */
-    private String value = "";//$NON-NLS-1$
+    protected String value = "";//$NON-NLS-1$
 
     /**
      * Ok button widget.
@@ -71,13 +72,13 @@ public class NewPreferenceDialog extends Dialog {
     /**
      * Name text widget.
      */
-    private Text nameText;
+    protected Text nameText;
 
     
     /**
      * Value text widget.
      */
-    private Text valueText;
+    protected Text valueText;
 
     /**
      * Error message label widget.
@@ -97,7 +98,7 @@ public class NewPreferenceDialog extends Dialog {
 	/**
 	 * Parent selection combo
 	 */
-	private ComboViewer viewer;
+	protected ComboViewer viewer;
     
     public NewPreferenceDialog(Shell parentShell, String initialParent, String[] possibleParents) {
         super(parentShell);
@@ -114,7 +115,7 @@ public class NewPreferenceDialog extends Dialog {
         if (buttonId == IDialogConstants.OK_ID) {
         	name = nameText.getText().trim();
             value = valueText.getText().trim();
-            parent = viewer.getCombo().getText().trim();
+            parent = getParentTxt();
         } else {
         	name = null;
             value = null;
@@ -122,6 +123,10 @@ public class NewPreferenceDialog extends Dialog {
         }
         super.buttonPressed(buttonId);
     }
+
+	protected String getParentTxt() {
+		return viewer.getCombo().getText().trim();
+	}
 
     /*
      * (non-Javadoc)
@@ -198,16 +203,9 @@ public class NewPreferenceDialog extends Dialog {
             label.setFont(parent.getFont());
         }
         
+		createParentControls(composite);
+        
         Label label = new Label(composite, SWT.WRAP);
-        label.setText("Preference parent:");
-        
-        viewer = new ComboViewer(composite, SWT.DROP_DOWN);
-        viewer.setContentProvider(new ArrayContentProvider());
-        
-        viewer.getControl().setLayoutData(new GridData(GridData.GRAB_HORIZONTAL
-                | GridData.HORIZONTAL_ALIGN_FILL));
-        
-        label = new Label(composite, SWT.WRAP);
         label.setText("Preference name:");
         
         nameText = new Text(composite, getInputTextStyle());
@@ -232,8 +230,7 @@ public class NewPreferenceDialog extends Dialog {
             }
         });
         errorMessageText = new Text(composite, SWT.READ_ONLY | SWT.WRAP);
-        errorMessageText.setLayoutData(new GridData(GridData.GRAB_HORIZONTAL
-                | GridData.HORIZONTAL_ALIGN_FILL));
+        GridDataFactory.fillDefaults().grab(true,false).span(2,1).applyTo(errorMessageText);
         errorMessageText.setBackground(errorMessageText.getDisplay()
                 .getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
         // Set the error message text
@@ -243,6 +240,17 @@ public class NewPreferenceDialog extends Dialog {
         applyDialogFont(composite);
         return composite;
     }
+
+	protected void createParentControls(Composite composite) {
+		Label label = new Label(composite, SWT.WRAP);
+        label.setText("Preference parent:");
+        
+        viewer = new ComboViewer(composite, SWT.DROP_DOWN);
+        viewer.setContentProvider(new ArrayContentProvider());
+        
+        viewer.getControl().setLayoutData(new GridData(GridData.GRAB_HORIZONTAL
+                | GridData.HORIZONTAL_ALIGN_FILL));
+	}
 
     protected void parentSelected(String parent) {
 		this.parent = parent;
@@ -286,14 +294,14 @@ public class NewPreferenceDialog extends Dialog {
      */
     protected void validateInput() {
         String errorMessage = null;
-        String parent = viewer.getCombo().getText().trim();
+        String parent = getParentTxt();
         String name = nameText.getText().trim();
         if (parent.isEmpty()) {
         	errorMessage = "Parent node/file name should be specified";
         } 
-//        else if (!FQCN.matcher(parent).matches()) {
-//        	errorMessage = "Parent should be valid plugin name, e.g. ab.cd.ef";
-//        } 
+        else if (!FQCN.matcher(parent).matches()) {
+        	errorMessage = "Parent should be valid plugin name, e.g. ab.cd.ef";
+        } 
         else if (name.isEmpty()) {
         	errorMessage = "Preference name should be specified";
         }

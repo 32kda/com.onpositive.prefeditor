@@ -34,9 +34,11 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.PlatformUI;
 
+import com.onpositive.prefeditor.dialogs.NewPlatformPreferenceDialog;
 import com.onpositive.prefeditor.dialogs.NewPreferenceDialog;
 import com.onpositive.prefeditor.model.IPreferenceProvider;
 import com.onpositive.prefeditor.model.KeyValue;
+import com.onpositive.prefeditor.model.PlatformPreferenceProvider;
 import com.onpositive.prefeditor.views.PrefsLabelProvider.Column;
 
 public abstract class ViewerPage extends Composite {
@@ -176,7 +178,11 @@ public abstract class ViewerPage extends Composite {
 		}
 		Object input = viewer.getInput();
 		if (input instanceof IPreferenceProvider) {
-			NewPreferenceDialog dialog = new NewPreferenceDialog(preferenceView.getSite().getShell(), parent, ((IPreferenceProvider) input).getNodeNames());
+			NewPreferenceDialog dialog =
+				input instanceof PlatformPreferenceProvider?
+					new NewPlatformPreferenceDialog(preferenceView.getSite().getShell(), parent, ((IPreferenceProvider) input).getNodeNames())
+					:
+					new NewPreferenceDialog(preferenceView.getSite().getShell(), parent, ((IPreferenceProvider) input).getNodeNames());
 			if (dialog.open() == Dialog.OK) {
 				parent = dialog.getParent();
 				String name = dialog.getName();
