@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Preference Editor
 Bundle-SymbolicName: com.onpositive.prefeditor;singleton:=true
-Bundle-Version: 1.0.0.qualifier
+Bundle-Version: 1.1.0.qualifier
 Bundle-Activator: com.onpositive.prefeditor.PrefEditorPlugin
 Bundle-Vendor: ONPOSITIVE
 Require-Bundle: org.eclipse.ui,
