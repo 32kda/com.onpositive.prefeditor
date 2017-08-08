@@ -27,7 +27,6 @@ import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
@@ -159,12 +158,6 @@ public abstract class ViewerPage extends Composite {
 		}
 	}
 	
-	public void setHierarchical(boolean hierarchical) {
-		contentProvider.setTreeMode(hierarchical);
-		keyLabelProvider.setTreeMode(hierarchical);
-		viewer.refresh();
-	}
-	
 	public void addPreference() {
 		String parent = null;
 		ISelection selection = viewer.getSelection();
@@ -256,10 +249,8 @@ public abstract class ViewerPage extends Composite {
 		preferenceView.getSite().registerContextMenu(menuMgr, viewer);
 	}
 	
-	@Override
-	public Point computeSize(int wHint, int hHint, boolean changed) {
-		// TODO Auto-generated method stub
-		return super.computeSize(wHint, hHint, changed);
+	public void collapseAll() {
+		viewer.collapseAll();
 	}
 
 }

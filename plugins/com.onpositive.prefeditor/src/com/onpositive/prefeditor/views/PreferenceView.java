@@ -95,6 +95,7 @@ public class PreferenceView extends ViewPart {
 	private Action viewModeAction;
 	private Action removeAction;
 	private Action addAction;
+	private Action collapseAllAction;
 	
 	private Action copyAction;
 	
@@ -104,9 +105,12 @@ public class PreferenceView extends ViewPart {
 
 	private IHandlerActivation copyHandlerActivation;
 
+	private IHandlerActivation refreshHandlerActivation;
+	
 	private CTabFolder tabFolder;
 	
 	private ViewerPage activePage;
+
 
 	class NameSorter extends ViewerSorter {
 	}
@@ -189,6 +193,7 @@ public class PreferenceView extends ViewPart {
 	}
 
 	private void fillLocalPullDown(IMenuManager manager) {
+		manager.add(collapseAllAction);
 		manager.add(chooseFolderAction);
 		manager.add(new Separator());
 		manager.add(viewModeAction);
@@ -209,6 +214,7 @@ public class PreferenceView extends ViewPart {
 	}
 	
 	private void fillLocalToolBar(IToolBarManager manager) {
+		manager.add(collapseAllAction);
 		manager.add(reloadAction);
 		manager.add(chooseFolderAction);
 		manager.add(viewModeAction);
@@ -301,7 +307,9 @@ public class PreferenceView extends ViewPart {
 		
 		viewModeAction = new Action("Hierarchical view", SWT.TOGGLE) {
 			public void run() {
-				getActiveViewerPage().setTreeMode(viewModeAction.isChecked());
+				boolean treeMode = viewModeAction.isChecked();
+				getActiveViewerPage().setTreeMode(treeMode);
+				collapseAllAction.setEnabled(treeMode);
 			}
 		};
 		viewModeAction.setChecked(true);
@@ -349,6 +357,17 @@ public class PreferenceView extends ViewPart {
 				getActiveViewerPage().copyKey();
 			}
 		};
+		
+		collapseAllAction = new Action() {
+			@Override
+			public void run() {
+				getActiveViewerPage().collapseAll();
+			}
+			
+		};
+		collapseAllAction.setText("Add preference");
+		collapseAllAction.setToolTipText("add preference");
+		collapseAllAction.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/collapseall.gif"));
 		
 		copyAction.setText("Copy key/name");
 		copyAction.setToolTipText("Copy key or node name");
@@ -399,6 +418,9 @@ public class PreferenceView extends ViewPart {
 		if (copyHandlerActivation != null) {
 			handlerService.deactivateHandler(copyHandlerActivation);
 		}
+		if (refreshHandlerActivation != null) {
+			handlerService.deactivateHandler(refreshHandlerActivation);
+		}
 	}
 
 	public void viewerFocusGained(FocusEvent event) {
@@ -406,6 +428,11 @@ public class PreferenceView extends ViewPart {
         copyHandlerActivation = handlerService
         		.activateHandler(IWorkbenchCommandConstants.EDIT_COPY,
         		new ActionHandler(copyAction));
+        
+        refreshHandlerActivation = handlerService
+        		.activateHandler(IWorkbenchCommandConstants.FILE_REFRESH,
+        		new ActionHandler(reloadAction));
+
 	}
 	
 
