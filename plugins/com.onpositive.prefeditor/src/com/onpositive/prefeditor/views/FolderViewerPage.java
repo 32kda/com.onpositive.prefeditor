@@ -10,12 +10,9 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.ConfigurationScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.TreePath;
-import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.FormAttachment;
-import org.eclipse.swt.layout.FormData;
-import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.osgi.service.prefs.BackingStoreException;
@@ -38,28 +35,12 @@ public class FolderViewerPage extends ViewerPage {
 		super(parent, preferenceView);
 	}
 	
-	@Override
-	protected void createViewer() {
-		FormLayout formLayout = new FormLayout();
-		setLayout(formLayout);
-		titleLabel = new Label(this, SWT.NONE);
-		FormData labelData = new FormData();
-		labelData.left = new FormAttachment(0,0);
-		labelData.top = new FormAttachment(0,0);
-		titleLabel.setLayoutData(labelData);
-		viewer = new TreeViewer(this, SWT.FULL_SELECTION | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
-        contentProvider = new PrefsContentProvider();
-		viewer.setContentProvider(contentProvider);
-        viewer.getTree().setHeaderVisible(true);
-        viewer.getTree().setLinesVisible(true);
-        FormData viewerData = new FormData();
-        viewerData.top = new FormAttachment(titleLabel, 5);
-        viewerData.bottom = new FormAttachment(100,0);
-        viewerData.left = new FormAttachment(0,0);
-        viewerData.right = new FormAttachment(100,0);
-        viewer.getTree().setLayoutData(viewerData);
+	protected void createTopArea(Composite con) {
+		titleLabel = new Label(con, SWT.NONE);
+		GridDataFactory.swtDefaults().span(3,1).applyTo(titleLabel);
+		createFilterControls(con);
 	}
-	
+
 	private void setViewerTitle(String folderPath) {
 		titleLabel.setToolTipText("");
 		if (folderPath == null || folderPath.isEmpty()) {

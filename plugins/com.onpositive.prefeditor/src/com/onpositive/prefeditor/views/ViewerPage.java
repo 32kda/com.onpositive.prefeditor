@@ -5,6 +5,7 @@ import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.AbstractTreeViewer;
 import org.eclipse.jface.viewers.ColumnViewerEditor;
 import org.eclipse.jface.viewers.ColumnViewerEditorActivationEvent;
@@ -27,17 +28,29 @@ import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.layout.FormAttachment;
+import org.eclipse.swt.layout.FormData;
+import org.eclipse.swt.layout.FormLayout;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.plugin.AbstractUIPlugin;
 
+import com.onpositive.prefeditor.PrefEditorPlugin;
 import com.onpositive.prefeditor.dialogs.NewPlatformPreferenceDialog;
 import com.onpositive.prefeditor.dialogs.NewPreferenceDialog;
 import com.onpositive.prefeditor.model.IPreferenceProvider;
 import com.onpositive.prefeditor.model.KeyValue;
 import com.onpositive.prefeditor.model.PlatformPreferenceProvider;
+import com.onpositive.prefeditor.ui.iternal.SetFilterJob;
 import com.onpositive.prefeditor.views.PrefsLabelProvider.Column;
 
 public abstract class ViewerPage extends Composite {
@@ -46,6 +59,9 @@ public abstract class ViewerPage extends Composite {
 	protected PrefsContentProvider contentProvider;
 	private PrefsLabelProvider keyLabelProvider;
 	private PreferenceView preferenceView;
+	private PreferenceFilter viewerFilter;
+	
+	private SetFilterJob filterJob;
 
 	public ViewerPage(Composite parent, PreferenceView preferenceView) {
 		super(parent, SWT.NONE);
@@ -97,7 +113,7 @@ public abstract class ViewerPage extends Composite {
     		protected boolean isEditorActivationEvent(ColumnViewerEditorActivationEvent event) {
     			return event.eventType == ColumnViewerEditorActivationEvent.MOUSE_DOUBLE_CLICK_SELECTION &&
     				   event.getSource() instanceof ViewerCell &&
-    				   ((ViewerCell) event.getSource()).getColumnIndex() == 1;
+    				   ((ViewerCell) event.getSource()).getColumnIndex() == 1 && isSelectionEditable();
     				   
     		}
     	};
@@ -132,16 +148,43 @@ public abstract class ViewerPage extends Composite {
 		hookContextMenu();
 	}
 
+	public boolean isSelectionEditable() {
+		return true;
+	}
+
 	protected abstract void initializeInput();
 
 	protected void createViewer() {
+		FormLayout formLayout = new FormLayout();
+		setLayout(formLayout);
+		Composite con = new Composite(this, SWT.NONE);
+		FormData topData = new FormData();
+		topData.left = new FormAttachment(0,0);
+		topData.right = new FormAttachment(100,0);
+		topData.top = new FormAttachment(0,0);
+		con.setLayoutData(topData);
+		
+		con.setLayout(new GridLayout(3,false));
+		createTopArea(con);
+		
 		viewer = new TreeViewer(this, SWT.FULL_SELECTION | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
         contentProvider = new PrefsContentProvider();
 		viewer.setContentProvider(contentProvider);
         viewer.getTree().setHeaderVisible(true);
         viewer.getTree().setLinesVisible(true);
+        FormData viewerData = new FormData();
+        viewerData.top = new FormAttachment(con, 5);
+        viewerData.bottom = new FormAttachment(100,0);
+        viewerData.left = new FormAttachment(0,0);
+        viewerData.right = new FormAttachment(100,0);
+        viewer.getTree().setLayoutData(viewerData);
+        viewerFilter = new PreferenceFilter();
+		viewer.addFilter(viewerFilter);
+		filterJob = new SetFilterJob(viewer, viewerFilter);
 	}
 	
+	protected abstract void createTopArea(Composite con);
+
 	public void removeSelected() {
 		Object input = viewer.getInput();
 		if (input instanceof IPreferenceProvider) {
@@ -154,8 +197,12 @@ public abstract class ViewerPage extends Composite {
 					((IPreferenceProvider) input).removeCategory(String.valueOf(element));	
 				}
 			}
-			viewer.refresh();
+			refreshTree();
 		}
+	}
+
+	protected void refreshTree() {
+		viewer.refresh();
 	}
 	
 	public void addPreference() {
@@ -182,7 +229,7 @@ public abstract class ViewerPage extends Composite {
 				String value = dialog.getValue();
 				KeyValue newElement = new KeyValue(parent, name, value);
 				((IPreferenceProvider) input).add(newElement);
-				viewer.refresh();
+				refreshTree();
 			}
 		}
 	}
@@ -251,6 +298,34 @@ public abstract class ViewerPage extends Composite {
 	
 	public void collapseAll() {
 		viewer.collapseAll();
+	}
+
+	protected void createFilterControls(Composite con) {
+		Label filterLabel = new Label(con,SWT.NONE);
+		filterLabel.setText("Filter:");
+		GridDataFactory.swtDefaults().applyTo(filterLabel);
+		Text filterText = new Text(con, SWT.BORDER);
+		filterText.setMessage("(" + PreferenceFilter.MIN_FILTER_CHARS + " chars at least)");
+		filterText.addModifyListener(event -> {
+			filterChanged(filterText.getText());
+		});
+		GridDataFactory.fillDefaults().grab(true,false).applyTo(filterText);
+		Button clearBtn = new Button(con, SWT.PUSH);
+		clearBtn.setImage(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/clear.gif").createImage());
+		GridDataFactory.swtDefaults().applyTo(clearBtn);
+		clearBtn.addSelectionListener(new SelectionAdapter() {
+			
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				filterText.setText("");
+				filterChanged("");
+			}
+			
+		});
+	}
+
+	protected void filterChanged(String filterText) {
+		filterJob.setFilterText(filterText);
 	}
 
 }

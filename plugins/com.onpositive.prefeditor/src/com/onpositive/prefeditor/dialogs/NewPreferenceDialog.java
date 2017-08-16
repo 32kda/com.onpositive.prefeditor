@@ -102,6 +102,7 @@ public class NewPreferenceDialog extends Dialog {
     
     public NewPreferenceDialog(Shell parentShell, String initialParent, String[] possibleParents) {
         super(parentShell);
+        setShellStyle(SWT.CLOSE | SWT.MODELESS | SWT.BORDER | SWT.TITLE);
 		this.possibleParents = possibleParents;
         this.title = "New preference";
         message = "Enter new preference details";
@@ -295,6 +296,10 @@ public class NewPreferenceDialog extends Dialog {
     protected void validateInput() {
         String errorMessage = null;
         String parent = getParentTxt();
+        int idx = parent.lastIndexOf('/');
+		if (idx > -1) {
+			parent = parent.substring(idx + 1);
+		}
         String name = nameText.getText().trim();
         if (parent.isEmpty()) {
         	errorMessage = "Parent node/file name should be specified";

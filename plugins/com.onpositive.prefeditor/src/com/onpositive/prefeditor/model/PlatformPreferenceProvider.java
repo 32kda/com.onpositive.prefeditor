@@ -32,7 +32,6 @@ public class PlatformPreferenceProvider implements IPreferenceProvider {
 	
 			@Override
 			public boolean visit(IEclipsePreferences node) {
-				// only show nodes, which have changed keys
 				try {
 					String[] keys = node.keys();
 					if (keys.length <= 0) {
@@ -138,7 +137,7 @@ public class PlatformPreferenceProvider implements IPreferenceProvider {
 	
 	protected IEclipsePreferences getNode(String categoryName) {
 		for (IScopeContext scopeContext : SCOPE_CONTEXTS) {
-			String preffix = "/" + scopeContext.getName();
+			String preffix = "/" + scopeContext.getName() + "/";
 			if (categoryName.startsWith(preffix)) {
 				IEclipsePreferences node = scopeContext.getNode(categoryName.substring(preffix.length()));
 				return node;

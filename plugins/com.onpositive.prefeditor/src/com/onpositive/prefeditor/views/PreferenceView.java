@@ -107,6 +107,8 @@ public class PreferenceView extends ViewPart {
 
 	private IHandlerActivation refreshHandlerActivation;
 	
+	private IHandlerActivation removeHandlerActivation;
+	
 	private CTabFolder tabFolder;
 	
 	private ViewerPage activePage;
@@ -176,12 +178,12 @@ public class PreferenceView extends ViewPart {
 	private void createFSTab(CTabFolder tabFolder) {
 		CTabItem item = new CTabItem(tabFolder, SWT.NONE);
 		item.setText("Folder");
-		FolderViewerPage page = new FolderViewerPage(tabFolder, this);
+		ViewerPage page = new FolderViewerPage(tabFolder, this);
 		item.setControl(page);
 	}
 
 	public void folderChoosed(String folderPath) {
-		if (activePage instanceof FolderViewerPage) {
+		if (activePage instanceof ViewerPage) {
 			((FolderViewerPage) activePage).folderChoosed(folderPath);
 		}
 	}
@@ -242,12 +244,12 @@ public class PreferenceView extends ViewPart {
 	private void makeActions() {
 		chooseFolderAction = new Action("Choose pref folder", Action.AS_DROP_DOWN_MENU) {
 			public void run() {
-				if (activePage instanceof FolderViewerPage) {
+				if (activePage instanceof ViewerPage) {
 					String folderPath = ((FolderViewerPage) activePage).getFolderPath();
 					FolderSelectionDialog dialog = new FolderSelectionDialog(getViewSite().getShell(), folderPath);
 					if (dialog.open() == Window.OK) {
 						ViewerPage activeViewerPage = getActiveViewerPage();
-						if (activeViewerPage instanceof FolderViewerPage) {
+						if (activeViewerPage instanceof ViewerPage) {
 							((FolderViewerPage) activeViewerPage).folderChoosed(dialog.getValue());
 						}
 					}
@@ -408,7 +410,7 @@ public class PreferenceView extends ViewPart {
 	public void updateActions(ISelection selection) {
 		chooseFolderAction.setEnabled(activePage instanceof FolderViewerPage);
 		
-		removeAction.setEnabled(!selection.isEmpty());
+		removeAction.setEnabled(!selection.isEmpty()  && activePage.isSelectionEditable());
 		copyAction.setEnabled(!selection.isEmpty());
 		copyValueAction.setEnabled(!selection.isEmpty() && ((StructuredSelection) selection).getFirstElement() instanceof KeyValue);
 	}
@@ -421,6 +423,9 @@ public class PreferenceView extends ViewPart {
 		if (refreshHandlerActivation != null) {
 			handlerService.deactivateHandler(refreshHandlerActivation);
 		}
+		if (removeHandlerActivation != null) {
+			handlerService.deactivateHandler(removeHandlerActivation);
+		}
 	}
 
 	public void viewerFocusGained(FocusEvent event) {
@@ -432,6 +437,10 @@ public class PreferenceView extends ViewPart {
         refreshHandlerActivation = handlerService
         		.activateHandler(IWorkbenchCommandConstants.FILE_REFRESH,
         		new ActionHandler(reloadAction));
+        
+        removeHandlerActivation = handlerService
+        		.activateHandler(IWorkbenchCommandConstants.EDIT_DELETE,
+        		new ActionHandler(removeAction));
 
 	}
 	

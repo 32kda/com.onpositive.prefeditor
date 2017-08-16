@@ -14,8 +14,8 @@ import org.eclipse.swt.widgets.Shell;
 public class NewPlatformPreferenceDialog extends NewPreferenceDialog {
 	
 	protected static final String DEFAULT_SCOPE = "instance";
-	protected static final String[] SCOPE_VALUES = {"instance","configuration","bundle_defaults","default"};
-	protected static final String[] SCOPE_LABELS = {"Instance","Configuration","Bundle Defaults","Default"};
+	protected static final String[] SCOPE_VALUES = {"instance","configuration"};
+	protected static final String[] SCOPE_LABELS = {"Instance","Configuration"};
 	private String scope = "";
 	private Button[] scopeRadios = new Button[SCOPE_VALUES.length];
 
