@@ -48,6 +48,7 @@ public class FolderViewerPage extends ViewerPage {
 			return;
 		} 
 		titleLabel.setText(PrefUIUtil.getFolderLabel(folderPath, MAX_TITLE_LENGTH));
+		titleLabel.setToolTipText(folderPath);
 	}
 	
 	protected String getDefaultFolder() {
