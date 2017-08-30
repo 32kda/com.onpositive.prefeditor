@@ -6,7 +6,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [1.1.0] 
+## [1.2.1] 
+
+### Added
+
+- Show/not show read-only (default, bundle defaults) nodes action for platform preferences
+- Copy folder path action for folder preferences 
+
+### Changed
+
+- Menu retitling and dynamic re-populating
+
+## [1.2.0] 
 
 ### Added
 
