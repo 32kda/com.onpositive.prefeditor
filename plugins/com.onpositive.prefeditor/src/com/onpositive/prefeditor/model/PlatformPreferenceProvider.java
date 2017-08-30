@@ -20,6 +20,8 @@ import com.onpositive.prefeditor.PrefEditorPlugin;
 
 public class PlatformPreferenceProvider implements IPreferenceProvider {
 	
+	public static IScopeContext[] READ_ONLY_CONTEXTS = {BundleDefaultsScope.INSTANCE, DefaultScope.INSTANCE}; 
+	
 	private static IScopeContext[] SCOPE_CONTEXTS = {BundleDefaultsScope.INSTANCE, ConfigurationScope.INSTANCE, DefaultScope.INSTANCE, InstanceScope.INSTANCE}; 
 	
 	private class PrefereneGatherer implements IPreferenceNodeVisitor {

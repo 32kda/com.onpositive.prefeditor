@@ -97,4 +97,8 @@ public class FolderViewerPage extends ViewerPage {
 		return folderPath;
 	}
 
+	public void copyPath() {
+		textToClipboard(folderPath);		
+	}
+
 }

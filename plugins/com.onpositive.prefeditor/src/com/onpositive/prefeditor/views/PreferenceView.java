@@ -83,6 +83,8 @@ public class PreferenceView extends ViewPart {
 		}
 
 	}
+	
+	private static final String SHOW_READ_ONLY_PREF = "showReadOnly";
 
 	private static final String CHOOSED_PAGE_PREF = "choosedPage";
 	
@@ -102,6 +104,10 @@ public class PreferenceView extends ViewPart {
 	private Action reloadAction;
 	
 	private Action copyValueAction;
+	
+	private Action copyPathAction;
+	
+	private Action showReadOnlyAction;
 
 	private IHandlerActivation copyHandlerActivation;
 
@@ -172,6 +178,7 @@ public class PreferenceView extends ViewPart {
 		CTabItem item = new CTabItem(tabFolder, SWT.NONE);
 		item.setText("Platform");
 		PlatformViewerPage page = new PlatformViewerPage(tabFolder, this);
+		page.setShowReadOnly(loadBoolPref(SHOW_READ_ONLY_PREF, false));
 		item.setControl(page);
 	}
 
@@ -196,7 +203,14 @@ public class PreferenceView extends ViewPart {
 
 	private void fillLocalPullDown(IMenuManager manager) {
 		manager.add(collapseAllAction);
-		manager.add(chooseFolderAction);
+		Action[] enabledActions = new Action[] {chooseFolderAction, showReadOnlyAction, copyPathAction};
+		for (Action action : enabledActions) {
+			if (action.isEnabled()) {
+				manager.add(action);
+			}
+			
+		}
+
 		manager.add(new Separator());
 		manager.add(viewModeAction);
 		manager.add(addAction);
@@ -218,7 +232,12 @@ public class PreferenceView extends ViewPart {
 	private void fillLocalToolBar(IToolBarManager manager) {
 		manager.add(collapseAllAction);
 		manager.add(reloadAction);
-		manager.add(chooseFolderAction);
+		if (activePage instanceof FolderViewerPage) {
+			manager.add(chooseFolderAction);
+		}
+		if (activePage instanceof PlatformViewerPage) {
+			manager.add(showReadOnlyAction);
+		}
 		manager.add(viewModeAction);
 		manager.add(addAction);
 		manager.add(removeAction);
@@ -238,6 +257,21 @@ public class PreferenceView extends ViewPart {
 	protected int loadChoosedPage() {
 		IEclipsePreferences node = InstanceScope.INSTANCE.getNode(PrefEditorPlugin.PLUGIN_ID);
 		return node.getInt(CHOOSED_PAGE_PREF, 0);
+	}
+	
+	protected void saveBoolPref(String key, boolean value) {
+		IEclipsePreferences node = InstanceScope.INSTANCE.getNode(PrefEditorPlugin.PLUGIN_ID);
+		node.putBoolean(key, value);
+		try {
+			node.flush();
+		} catch (BackingStoreException e) {
+			PrefEditorPlugin.log(e);
+		}
+	}
+	
+	protected boolean loadBoolPref(String key, boolean defaultValue) {
+		IEclipsePreferences node = InstanceScope.INSTANCE.getNode(PrefEditorPlugin.PLUGIN_ID);
+		return node.getBoolean(key, defaultValue);
 	}
 
 
@@ -315,7 +349,7 @@ public class PreferenceView extends ViewPart {
 			}
 		};
 		viewModeAction.setChecked(true);
-		viewModeAction.setText("View mode");
+		viewModeAction.setText("Hierarchical view");
 		viewModeAction.setToolTipText("Toggle hierarchical/flat view");
 		viewModeAction.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/hierarchicalLayout.gif"));
 		
@@ -367,8 +401,8 @@ public class PreferenceView extends ViewPart {
 			}
 			
 		};
-		collapseAllAction.setText("Add preference");
-		collapseAllAction.setToolTipText("add preference");
+		collapseAllAction.setText("Collapse all");
+		collapseAllAction.setToolTipText("Collapse all expanded nodes");
 		collapseAllAction.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/collapseall.gif"));
 		
 		copyAction.setText("Copy key/name");
@@ -385,6 +419,36 @@ public class PreferenceView extends ViewPart {
 		copyValueAction.setText("Copy value");
 		copyValueAction.setToolTipText("Copy preference value");
 		copyValueAction.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/copy.png"));
+		
+		copyPathAction = new Action() {
+			@Override
+			public void run() {
+				ViewerPage page = getActiveViewerPage();
+				if (page instanceof FolderViewerPage) {
+					((FolderViewerPage) page).copyPath();
+				}
+			}
+		};
+		
+		copyPathAction.setText("Copy folder path");
+		copyPathAction.setToolTipText("Copy preference folder path");
+		copyPathAction.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/folder_copy.png"));
+		
+		showReadOnlyAction = new Action("Show read-only nodes", SWT.TOGGLE) {
+			@Override
+			public void run() {
+				ViewerPage page = getActiveViewerPage();
+				if (page instanceof PlatformViewerPage) {
+					((PlatformViewerPage) page).setShowReadOnly(showReadOnlyAction.isChecked());
+					saveBoolPref(SHOW_READ_ONLY_PREF, showReadOnlyAction.isChecked());
+				}
+			}
+		};
+		
+		showReadOnlyAction.setText("Show read-only nodes");
+		showReadOnlyAction.setToolTipText("Show prefs from read-only categories, like default ones");
+		showReadOnlyAction.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/readonly.png"));
+		showReadOnlyAction.setChecked(loadBoolPref(SHOW_READ_ONLY_PREF, false));
 		
 	}
 
@@ -409,10 +473,23 @@ public class PreferenceView extends ViewPart {
 
 	public void updateActions(ISelection selection) {
 		chooseFolderAction.setEnabled(activePage instanceof FolderViewerPage);
+		copyPathAction.setEnabled(activePage instanceof FolderViewerPage);
+		showReadOnlyAction.setEnabled(activePage instanceof PlatformViewerPage);
 		
 		removeAction.setEnabled(!selection.isEmpty()  && activePage.isSelectionEditable());
 		copyAction.setEnabled(!selection.isEmpty());
 		copyValueAction.setEnabled(!selection.isEmpty() && ((StructuredSelection) selection).getFirstElement() instanceof KeyValue);
+		
+		IActionBars bars = getViewSite().getActionBars();
+		IToolBarManager toolBarManager = bars.getToolBarManager();
+		toolBarManager.removeAll();
+		fillLocalToolBar(toolBarManager);
+		toolBarManager.update(true);
+		
+		IMenuManager menuManager = bars.getMenuManager();
+		menuManager.removeAll();
+		fillLocalPullDown(menuManager);
+		menuManager.update(true);
 	}
 
 	public void viewerFocusLost(FocusEvent event) {

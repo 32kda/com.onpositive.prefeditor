@@ -10,8 +10,12 @@ import com.onpositive.prefeditor.model.PlatformPreferenceProvider;
 
 public class PlatformViewerPage extends ViewerPage {
 
+	private ReadOnlyFilter readOnlyFilter;
+
 	public PlatformViewerPage(Composite parent, PreferenceView preferenceView) {
 		super(parent, preferenceView);
+		readOnlyFilter = new ReadOnlyFilter();
+		viewer.addFilter(readOnlyFilter);
 	}
 
 	@Override
@@ -36,6 +40,13 @@ public class PlatformViewerPage extends ViewerPage {
 	@Override
 	protected void createTopArea(Composite con) {
 		createFilterControls(con);
+	}
+	
+	public void setShowReadOnly(boolean showReadOnly) {
+		readOnlyFilter.setEnabled(!showReadOnly);
+		TreePath[] paths = viewer.getExpandedTreePaths();
+		viewer.refresh();
+		viewer.setExpandedTreePaths(paths);
 	}
 	
 	@Override
