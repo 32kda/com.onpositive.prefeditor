@@ -7,20 +7,29 @@ import org.eclipse.swt.widgets.Composite;
 
 import com.onpositive.prefeditor.model.KeyValue;
 import com.onpositive.prefeditor.model.PlatformPreferenceProvider;
+import com.onpositive.prefeditor.ui.iternal.ViewerRefreshJob;
 
 public class PlatformViewerPage extends ViewerPage {
 
 	private ReadOnlyFilter readOnlyFilter;
+	
+	private ViewerRefreshJob refreshJob;
 
 	public PlatformViewerPage(Composite parent, PreferenceView preferenceView) {
 		super(parent, preferenceView);
 		readOnlyFilter = new ReadOnlyFilter();
 		viewer.addFilter(readOnlyFilter);
+		refreshJob = new ViewerRefreshJob(viewer);
 	}
 
 	@Override
 	protected void initializeInput() {
-		viewer.setInput(new PlatformPreferenceProvider());
+		PlatformPreferenceProvider platformPreferenceProvider = new PlatformPreferenceProvider();
+		platformPreferenceProvider.setTracking(true);
+		platformPreferenceProvider.setUpdateCallback((id) -> {
+			refreshJob.checkReschedule();
+		});
+		viewer.setInput(platformPreferenceProvider);
 	}
 	
 	@Override

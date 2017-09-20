@@ -32,5 +32,12 @@ public class PrefUIUtil {
 		}
 		return folderPath;
 	}
+
+	public static String emptyIfNull(Object value) {
+		if (value == null) {
+			return "";
+		}
+		return value.toString();
+	}
 	
 }
