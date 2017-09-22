@@ -18,13 +18,14 @@ import org.eclipse.core.runtime.preferences.IScopeContext;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.services.IDisposable;
 import org.osgi.service.prefs.BackingStoreException;
 import org.osgi.service.prefs.Preferences;
 
 import com.onpositive.prefeditor.PrefEditorPlugin;
 import com.onpositive.prefeditor.ui.iternal.PrefUIUtil;
 
-public class PlatformPreferenceProvider implements IPreferenceProvider {
+public class PlatformPreferenceProvider implements IPreferenceProvider, IDisposable {
 	
 	public static IScopeContext[] READ_ONLY_CONTEXTS = {BundleDefaultsScope.INSTANCE, DefaultScope.INSTANCE}; 
 	
@@ -219,13 +220,17 @@ public class PlatformPreferenceProvider implements IPreferenceProvider {
 		loadPrefs();
 	}
 
+	@Override
 	public boolean isTracking() {
 		return tracking;
 	}
 
+	@Override
 	public void setTracking(boolean tracking) {
 		this.tracking = tracking;
 		if (tracking) {
+			reload();
+			firePreferencesUpdated("");
 			addNodeListeners();
 		} else {
 			removeNodeListeners();
@@ -253,12 +258,19 @@ public class PlatformPreferenceProvider implements IPreferenceProvider {
 		}
 	}
 
+	@Override
 	public IPreferenceUpdateCallback getUpdateCallback() {
 		return updateCallback;
 	}
 
+	@Override
 	public void setUpdateCallback(IPreferenceUpdateCallback updateCallback) {
 		this.updateCallback = updateCallback;
+	}
+
+	@Override
+	public void dispose() {
+		removeNodeListeners();
 	}
 
 }

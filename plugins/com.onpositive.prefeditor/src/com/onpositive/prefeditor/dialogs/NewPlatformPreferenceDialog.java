@@ -64,7 +64,7 @@ public class NewPlatformPreferenceDialog extends NewPreferenceDialog {
 			Button btn = new Button(group, SWT.RADIO);
 			btn.setText(SCOPE_LABELS[i]);
 			btn.setData(SCOPE_VALUES[i]);
-			if (SCOPE_VALUES[i].equals(scope)) {
+			if (SCOPE_VALUES[i].equals(scope) || (scope.isEmpty() && i == 0)) {
 				btn.setSelection(true);
 			}
 			scopeRadios[i] = btn;

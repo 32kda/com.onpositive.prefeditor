@@ -7,6 +7,7 @@ import java.io.File;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.ConfigurationScope;
@@ -15,7 +16,9 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.ui.services.IDisposable;
 import org.osgi.service.prefs.BackingStoreException;
 
 import com.onpositive.prefeditor.PrefEditorPlugin;
@@ -67,7 +70,7 @@ public class FolderViewerPage extends ViewerPage {
 	@Override
 	protected void initializeInput() {
 		folderPath = getInitialFolder();
-		viewer.setInput(new FolderPreferenceProvider(folderPath));
+		setupPreferenceProvider(true);
 		setViewerTitle(folderPath);
 	}
 	
@@ -77,7 +80,7 @@ public class FolderViewerPage extends ViewerPage {
 	
 	public void folderChoosed(String folderPath) {
 		this.folderPath = folderPath;
-		viewer.setInput(new FolderPreferenceProvider(folderPath));
+		doResetProvider();
 		IEclipsePreferences node = ConfigurationScope.INSTANCE.getNode(PrefEditorPlugin.PLUGIN_ID);
 		node.put(CHOOSED_FOLDER_PREF, folderPath);
 		try {
@@ -90,8 +93,31 @@ public class FolderViewerPage extends ViewerPage {
 	
 	public void reloadPrefs() {
 		TreePath[] paths = viewer.getExpandedTreePaths();
-		viewer.setInput(new FolderPreferenceProvider(folderPath));
+		doResetProvider();
 		viewer.setExpandedTreePaths(paths);
+	}
+
+	protected void doResetProvider() {
+		boolean tracking = true;
+		Object input = viewer.getInput();
+		if (input instanceof FolderPreferenceProvider) {
+			((IDisposable) input).dispose();
+			tracking = ((FolderPreferenceProvider) input).isTracking();
+		}
+		setupPreferenceProvider(tracking);
+	}
+
+	protected void setupPreferenceProvider(boolean tracking) {
+		FolderPreferenceProvider folderPreferenceProvider = new FolderPreferenceProvider(folderPath);
+		folderPreferenceProvider.setTracking(tracking);
+		folderPreferenceProvider.setUpdateCallback((id) -> {
+			Display.getDefault().asyncExec(() -> {
+				if (!viewer.getControl().isDisposed()) {
+					viewer.refresh();
+				}
+			});
+		});
+		viewer.setInput(folderPreferenceProvider);
 	}
 
 	public String getFolderPath() {
@@ -100,6 +126,15 @@ public class FolderViewerPage extends ViewerPage {
 
 	public void copyPath() {
 		textToClipboard(folderPath);		
+	}
+	
+	@Override
+	public void dispose() {
+		Object input = viewer.getInput();
+		if (input instanceof IDisposable) {
+			((IDisposable) input).dispose();
+		}
+		super.dispose();
 	}
 	
 	//-----------------------------------------------------------------------
@@ -173,6 +208,6 @@ public class FolderViewerPage extends ViewerPage {
             decoded = buffer.toString();
         }
         return decoded;
-}
+    }
 
 }

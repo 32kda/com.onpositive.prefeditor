@@ -17,7 +17,9 @@ public class ViewerRefreshJob extends ReschedulableJob {
 	@Override
 	protected IStatus execute() {
 		Display.getDefault().asyncExec(() -> {
-			viewer.refresh();
+			if (!viewer.getControl().isDisposed()) {
+				viewer.refresh();
+			}
 		});
 		return Status.OK_STATUS;
 	}

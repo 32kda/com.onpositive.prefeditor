@@ -4,7 +4,9 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.ui.services.IDisposable;
 
+import com.onpositive.prefeditor.model.IPreferenceProvider;
 import com.onpositive.prefeditor.model.KeyValue;
 import com.onpositive.prefeditor.model.PlatformPreferenceProvider;
 import com.onpositive.prefeditor.ui.iternal.ViewerRefreshJob;
@@ -24,7 +26,7 @@ public class PlatformViewerPage extends ViewerPage {
 
 	@Override
 	protected void initializeInput() {
-		PlatformPreferenceProvider platformPreferenceProvider = new PlatformPreferenceProvider();
+		IPreferenceProvider platformPreferenceProvider = new PlatformPreferenceProvider();
 		platformPreferenceProvider.setTracking(true);
 		platformPreferenceProvider.setUpdateCallback((id) -> {
 			refreshJob.checkReschedule();
@@ -61,11 +63,26 @@ public class PlatformViewerPage extends ViewerPage {
 	@Override
 	public boolean isSelectionEditable() {
 		ISelection selection = getSelection();
-		if (!selection.isEmpty() && ((StructuredSelection) selection).getFirstElement() instanceof KeyValue) {
-			KeyValue keyValue = (KeyValue) ((StructuredSelection) selection).getFirstElement();
-			String parentNode = keyValue.getParentNode();
-			return (!parentNode.startsWith("/default/") && (!parentNode.startsWith("/bundle_defaults/")));
+		if (!selection.isEmpty()) {
+			Object firstElement = ((StructuredSelection) selection).getFirstElement();
+			String nodeId = "";
+			if (firstElement instanceof KeyValue) {
+				KeyValue keyValue = (KeyValue) firstElement;
+				nodeId = keyValue.getParentNode();
+			} else {
+				nodeId = firstElement.toString();
+			}
+			return (!nodeId.startsWith("/default/") && (!nodeId.startsWith("/bundle_defaults/")));
 		}
 		return false;
+	}
+	
+	@Override
+	public void dispose() {
+		Object input = viewer.getInput();
+		if (input instanceof IDisposable) {
+			((IDisposable) input).dispose();
+		}
+		super.dispose();
 	}
 }

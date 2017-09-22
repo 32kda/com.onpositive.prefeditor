@@ -2,7 +2,7 @@
 <feature
       id="com.onpositive.prefeditor.feature"
       label="Preference Editor Feature"
-      version="1.2.1.qualifier"
+      version="1.3.0.qualifier"
       provider-name="ONPOSITIVE">
 
    <description url="https://github.com/32kda/com.onpositive.prefeditor/wiki">

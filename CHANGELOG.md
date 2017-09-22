@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.3.0] 
+
+### Added
+
+- Tracking mode to refresh both platform and folder-based preferences 
+
+### Changed
+
+- Fixed NPE & wrong dialog type for adding folder-based preference
+- Fixed show read-only for flat view mode
+- Fixed invalid Remove action disablement 
+- Minor UI tweaks
+
 ## [1.2.1] 
 
 ### Added

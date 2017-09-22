@@ -206,10 +206,20 @@ public abstract class ViewerPage extends Composite {
 	}
 	
 	public void addPreference() {
-		String parent = null;
+		String parent = "";
 		ISelection selection = viewer.getSelection();
+		Object element = null;
 		if (!selection.isEmpty()) {
-			Object element = ((StructuredSelection) selection).getFirstElement();
+			element = ((StructuredSelection) selection).getFirstElement();
+		}
+		if (element == null) {
+			Object[] elements = contentProvider.getElements("");
+			if (elements.length > 0) {
+				element = elements[0];
+			}
+		}
+		
+		if (element != null) {		
 			if (element instanceof KeyValue) {
 				parent = ((KeyValue) element).getParentNode();
 			} else {
@@ -326,6 +336,21 @@ public abstract class ViewerPage extends Composite {
 
 	protected void filterChanged(String filterText) {
 		filterJob.setFilterText(filterText);
+	}
+
+	public void setTracking(boolean tracking) {
+		Object input = viewer.getInput();
+		if (input instanceof IPreferenceProvider) {
+			((IPreferenceProvider) input).setTracking(tracking);
+		}
+	}
+	
+	public boolean isTracking() {
+		Object input = viewer.getInput();
+		if (input instanceof IPreferenceProvider) {
+			return ((IPreferenceProvider) input).isTracking();
+		}
+		return false;
 	}
 
 }

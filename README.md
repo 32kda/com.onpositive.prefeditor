@@ -13,7 +13,7 @@ Since version 1.1, both "offline" (preference files) and "online" (running platf
 This mode allows changing preferences by editing special files containing them prior to launching particular IDE or workspace, changes are saved to corresponding files immediately.
  
 ### "Platform"/"Online" editing
-"Online" editing allows you to edit preferences from currently running platform. For now, plugin does not listen to preference changes, please use "reload" button to refresh view content.
+"Online" editing allows you to edit preferences from currently running platform. Since 1.3.0, plugin can listen to preference changes and refresh view automaticaly. Alternatively, you can turn off tracking and use "reload" button to refresh view content.
 
 ## Important!
 

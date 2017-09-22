@@ -108,6 +108,8 @@ public class PreferenceView extends ViewPart {
 	private Action copyPathAction;
 	
 	private Action showReadOnlyAction;
+	
+	private Action trackAction;
 
 	private IHandlerActivation copyHandlerActivation;
 
@@ -214,6 +216,7 @@ public class PreferenceView extends ViewPart {
 		manager.add(new Separator());
 		manager.add(viewModeAction);
 		manager.add(addAction);
+		manager.add(trackAction);
 	}
 
 	public void fillContextMenu(IMenuManager manager) {
@@ -231,6 +234,7 @@ public class PreferenceView extends ViewPart {
 	
 	private void fillLocalToolBar(IToolBarManager manager) {
 		manager.add(collapseAllAction);
+		manager.add(trackAction);
 		manager.add(reloadAction);
 		if (activePage instanceof FolderViewerPage) {
 			manager.add(chooseFolderAction);
@@ -450,6 +454,18 @@ public class PreferenceView extends ViewPart {
 		showReadOnlyAction.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/readonly.png"));
 		showReadOnlyAction.setChecked(loadBoolPref(SHOW_READ_ONLY_PREF, false));
 		
+		trackAction = new Action("Track changes", SWT.TOGGLE) {
+			@Override
+			public void run() {
+				ViewerPage page = getActiveViewerPage();
+				page.setTracking(trackAction.isChecked());
+			}
+		};
+		
+		trackAction.setText("Track changes");
+		trackAction.setToolTipText("Track preference changes");
+		trackAction.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/watch.png"));
+		trackAction.setChecked(true);
 	}
 
 	/**
@@ -479,6 +495,7 @@ public class PreferenceView extends ViewPart {
 		removeAction.setEnabled(!selection.isEmpty()  && activePage.isSelectionEditable());
 		copyAction.setEnabled(!selection.isEmpty());
 		copyValueAction.setEnabled(!selection.isEmpty() && ((StructuredSelection) selection).getFirstElement() instanceof KeyValue);
+		trackAction.setChecked(activePage.isTracking());
 		
 		IActionBars bars = getViewSite().getActionBars();
 		IToolBarManager toolBarManager = bars.getToolBarManager();

@@ -30,7 +30,7 @@ public class ReadOnlyFilter extends ViewerFilter {
 			if (element instanceof String) {
 				key = element.toString().toLowerCase();
 			} else if (element instanceof KeyValue) {
-				key = ((KeyValue) element).getKey().toLowerCase();
+				key = ((KeyValue) element).getParentNode().toLowerCase();
 			}
 			for (int i = 0; i < readOnlyPrefixes.length; i++) {
 				if (key.startsWith(readOnlyPrefixes[i])) {
