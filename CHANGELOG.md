@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.3.1]
+ 
+### Changed
+
+- Fixed multiple I/O exception like "File not found" caused by folder tracking
+
 ## [1.3.0] 
 
 ### Added

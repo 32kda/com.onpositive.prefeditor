@@ -66,12 +66,14 @@ public class FolderPreferenceProvider implements IPreferenceProvider, IDisposabl
 							name = name.substring(0, name.length() - EXT.length());
 						}
 						propFiles.remove(name);
-					} else {
+					} else if (watchEvent.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
 						File file = ev.context().toFile();
 						if (!ev.context().isAbsolute()) {
 							file = new File(preferenceFolder, file.getName());
 						}
-						loadPrefsFromFile(file);
+						if (file.exists() && file.getName().endsWith(EXT)) {
+							loadPrefsFromFile(file);
+						}
 					}
 				}
 		    }
@@ -132,7 +134,11 @@ public class FolderPreferenceProvider implements IPreferenceProvider, IDisposabl
 			properties.load(stream);
 			propFiles.put(name, properties);
 		} catch (FileNotFoundException e) {
-			PrefEditorPlugin.log(e);
+			if (e.getMessage().indexOf("(Access is denied)") >= 0) {
+				//ignore
+			} else {
+				PrefEditorPlugin.log(e);
+			}
 		} catch (IOException e) {
 			PrefEditorPlugin.log(e);
 		}
