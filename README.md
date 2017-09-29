@@ -38,6 +38,6 @@ All the code is licensed under [Eclipse Public License - v 1.0](https://www.ecli
 
 ## To Be Done
 
- * Introduce listening to running platform preference changes
- * Better filtering configuration, like filtering off selected scopes for platform preferences
+ * Simple content assist, like "true/false" suggestion for some props, multi-line editor window for long text
  * Possibly - importing, exporting preferences to file and opening pref file location (does someone need such a features?)
+ * Better filtering configuration, like filtering off selected scopes for platform preferences
