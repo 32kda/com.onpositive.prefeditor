@@ -15,9 +15,11 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -37,6 +39,8 @@ public class FolderPreferenceProvider implements IPreferenceProvider, IDisposabl
 	
 	protected ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
 	
+	protected Set<File> delayedLoadSet = new HashSet<File>();
+	
 	final protected File preferenceFolder;
 
 	private boolean tracking;
@@ -45,6 +49,12 @@ public class FolderPreferenceProvider implements IPreferenceProvider, IDisposabl
 		
 		@Override
 		public void run() {
+			for (File file : delayedLoadSet) {
+				if (file.exists() &&file.isFile() && file.canRead() && file.getName().endsWith(EXT)) {
+					loadPrefsFromFile(file);
+				}
+			}
+			delayedLoadSet.clear(); //Even if we failed - give up after one try
 			WatchKey key;
 		    try {
 		        // wait for a key to be available
@@ -71,7 +81,11 @@ public class FolderPreferenceProvider implements IPreferenceProvider, IDisposabl
 						if (!ev.context().isAbsolute()) {
 							file = new File(preferenceFolder, file.getName());
 						}
-						if (file.exists() && file.getName().endsWith(EXT)) {
+						if (!file.exists() || file.isDirectory() || !file.getName().endsWith(EXT)) {
+							continue;
+						} else if (!file.canRead()) {
+							delayedLoadSet.add(file);
+						} else {
 							loadPrefsFromFile(file);
 						}
 					}
