@@ -1,5 +1,10 @@
 package com.onpositive.prefeditor.views;
 
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Properties;
+
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
@@ -351,6 +356,25 @@ public abstract class ViewerPage extends Composite {
 			return ((IPreferenceProvider) input).isTracking();
 		}
 		return false;
+	}
+
+	public void exportValues(String path) {
+		ISelection selection = getSelection();
+		if  (!selection.isEmpty() && !(((StructuredSelection) selection).getFirstElement() instanceof KeyValue)) {
+			String nodeId = ((StructuredSelection) selection).getFirstElement().toString();
+			Object[] children = contentProvider.getChildren(nodeId);
+			Properties properties = new Properties();
+			for (Object object : children) {
+				if (object instanceof KeyValue) {
+					properties.put(((KeyValue) object).getKey(), ((KeyValue) object).getValue());
+				}
+			}
+			try (BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(path))) {
+				properties.store(os, "");
+			} catch (IOException e) {
+				PrefEditorPlugin.log(e);
+			}
+		}
 	}
 
 }

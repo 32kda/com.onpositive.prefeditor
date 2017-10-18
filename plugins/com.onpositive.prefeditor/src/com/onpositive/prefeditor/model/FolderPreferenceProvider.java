@@ -50,8 +50,11 @@ public class FolderPreferenceProvider implements IPreferenceProvider, IDisposabl
 		@Override
 		public void run() {
 			for (File file : delayedLoadSet) {
-				if (file.exists() &&file.isFile() && file.canRead() && file.getName().endsWith(EXT)) {
-					loadPrefsFromFile(file);
+				if (file.exists() && file.isFile() && file.canRead() && file.getName().endsWith(EXT)) {
+					Properties loadedPrefs = loadPrefsFromFile(file);
+		    		if (loadedPrefs != null) {
+		    			propFiles.put(getFileNodeName(file), loadedPrefs);
+		    		} 
 				}
 			}
 			delayedLoadSet.clear(); //Even if we failed - give up after one try
@@ -67,6 +70,7 @@ public class FolderPreferenceProvider implements IPreferenceProvider, IDisposabl
 		    	propFiles.clear();
 		    	loadPrefs();
 		    } else {
+		    	Set<File> loadSet = new HashSet<>();
 		    	for (WatchEvent<?> watchEvent : events) {
 		    		@SuppressWarnings("unchecked")
 		    		WatchEvent<Path> ev = (WatchEvent<Path>) watchEvent;
@@ -76,7 +80,7 @@ public class FolderPreferenceProvider implements IPreferenceProvider, IDisposabl
 							name = name.substring(0, name.length() - EXT.length());
 						}
 						propFiles.remove(name);
-					} else if (watchEvent.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
+					} else if (watchEvent.kind() == StandardWatchEventKinds.ENTRY_MODIFY || watchEvent.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
 						File file = ev.context().toFile();
 						if (!ev.context().isAbsolute()) {
 							file = new File(preferenceFolder, file.getName());
@@ -86,9 +90,17 @@ public class FolderPreferenceProvider implements IPreferenceProvider, IDisposabl
 						} else if (!file.canRead()) {
 							delayedLoadSet.add(file);
 						} else {
-							loadPrefsFromFile(file);
+							loadSet.add(file);
 						}
 					}
+				}
+		    	for (File curFile : loadSet) {
+		    		Properties loadedPrefs = loadPrefsFromFile(curFile);
+		    		if (loadedPrefs != null) {
+		    			propFiles.put(getFileNodeName(curFile), loadedPrefs);
+		    		} else {
+		    			delayedLoadSet.add(curFile);
+		    		}
 				}
 		    }
 		    if (events.size() > 0) {
@@ -134,28 +146,29 @@ public class FolderPreferenceProvider implements IPreferenceProvider, IDisposabl
 		}
 		File[] prefFiles = preferenceFolder.listFiles((parent, name) -> name.endsWith(EXT));
 		for (File file : prefFiles) {
-			loadPrefsFromFile(file);
+			Properties loadedPrefs = loadPrefsFromFile(file);
+			if (loadedPrefs != null) {
+    			propFiles.put(getFileNodeName(file), loadedPrefs);
+    		}
 		}
 	}
 
-	protected void loadPrefsFromFile(File file) {
+	protected Properties loadPrefsFromFile(File file) {
+		try (InputStream stream = new BufferedInputStream(new FileInputStream(file))) {
+			Properties properties = new Properties();
+			properties.load(stream);
+			return properties;
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
+	protected String getFileNodeName(File file) {
 		String name = file.getName();
 		if (name.endsWith(EXT)) {
 			name = name.substring(0, name.length() - EXT.length());
 		}
-		try (InputStream stream = new BufferedInputStream(new FileInputStream(file))) {
-			Properties properties = new Properties();
-			properties.load(stream);
-			propFiles.put(name, properties);
-		} catch (FileNotFoundException e) {
-			if (e.getMessage().indexOf("(Access is denied)") >= 0) {
-				//ignore
-			} else {
-				PrefEditorPlugin.log(e);
-			}
-		} catch (IOException e) {
-			PrefEditorPlugin.log(e);
-		}
+		return name;
 	}
 	
 	public String[] getNodeNames() {

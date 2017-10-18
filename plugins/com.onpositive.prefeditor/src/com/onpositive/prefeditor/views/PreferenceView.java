@@ -31,6 +31,7 @@ import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.ISharedImages;
@@ -96,6 +97,8 @@ public class PreferenceView extends ViewPart {
 	private Action showReadOnlyAction;
 	
 	private Action trackAction;
+	
+	private Action exportAction;
 
 	private IHandlerActivation copyHandlerActivation;
 
@@ -207,7 +210,7 @@ public class PreferenceView extends ViewPart {
 
 	public void fillContextMenu(IMenuManager manager) {
 		manager.add(addAction);
-		Action[] enabledActions = new Action[] {removeAction, copyAction, copyValueAction};
+		Action[] enabledActions = new Action[] {removeAction, copyAction, copyValueAction, exportAction};
 		for (Action action : enabledActions) {
 			if (action.isEnabled()) {
 				manager.add(action);
@@ -452,6 +455,41 @@ public class PreferenceView extends ViewPart {
 		trackAction.setToolTipText("Track preference changes");
 		trackAction.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/watch.png"));
 		trackAction.setChecked(true);
+		
+		exportAction = new Action() {
+			@Override
+			public void run() {
+				ISelection selection = getActiveViewerPage().getSelection();
+				if  (!selection.isEmpty() && !(((StructuredSelection) selection).getFirstElement() instanceof KeyValue)) {
+					String nodeId = ((StructuredSelection) selection).getFirstElement().toString();
+					FileDialog dialog = new FileDialog(getSite().getWorkbenchWindow().getShell(), SWT.SAVE);
+				    dialog
+				        .setFilterNames(new String[] { "Preference files", "All Files (*.*)" });
+				    dialog.setFilterExtensions(new String[] { "*.prefs", "*.*" }); // Windows
+				                                    // wild
+				                                    // cards
+				    dialog.setFileName(nodeId + ".prefs");
+				    String path = dialog.open();
+				    if (path != null) {
+				    	getActiveViewerPage().exportValues(path);
+				    }
+				}
+			}
+		};
+		
+		exportAction.setText("Export values");
+		exportAction.setToolTipText("Export selected node values to file");
+		exportAction.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/export.gif"));
+		
+		copyPathAction = new Action() {
+			@Override
+			public void run() {
+				ViewerPage page = getActiveViewerPage();
+				if (page instanceof FolderViewerPage) {
+					((FolderViewerPage) page).copyPath();
+				}
+			}
+		};
 	}
 
 	/**
@@ -482,6 +520,8 @@ public class PreferenceView extends ViewPart {
 		copyAction.setEnabled(!selection.isEmpty());
 		copyValueAction.setEnabled(!selection.isEmpty() && ((StructuredSelection) selection).getFirstElement() instanceof KeyValue);
 		trackAction.setChecked(activePage.isTracking());
+		
+		exportAction.setEnabled(!selection.isEmpty() && !(((StructuredSelection) selection).getFirstElement() instanceof KeyValue));
 		
 		IActionBars bars = getViewSite().getActionBars();
 		IToolBarManager toolBarManager = bars.getToolBarManager();
