@@ -41,7 +41,7 @@ public class FolderViewerPage extends ViewerPage {
 	
 	protected void createTopArea(Composite con) {
 		titleLabel = new Label(con, SWT.NONE);
-		GridDataFactory.swtDefaults().span(3,1).applyTo(titleLabel);
+		GridDataFactory.fillDefaults().grab(true,false).span(3,1).applyTo(titleLabel);
 		createFilterControls(con);
 	}
 
