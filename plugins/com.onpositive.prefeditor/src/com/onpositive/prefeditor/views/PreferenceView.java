@@ -468,7 +468,11 @@ public class PreferenceView extends ViewPart {
 				    dialog.setFilterExtensions(new String[] { "*.prefs", "*.*" }); // Windows
 				                                    // wild
 				                                    // cards
-				    dialog.setText("Export preferences as");
+				    int idx = nodeId.lastIndexOf('/');
+				    if (idx >= 0) {
+				    	nodeId = nodeId.substring(idx + 1).trim();
+				    }
+				    dialog.setText("Export preferences for " + nodeId + " as");
 				    dialog.setFileName(nodeId + ".prefs");
 				    String path = dialog.open();
 				    if (path != null) {
@@ -478,7 +482,7 @@ public class PreferenceView extends ViewPart {
 			}
 		};
 		
-		exportAction.setText("Export values");
+		exportAction.setText("Export prefs");
 		exportAction.setToolTipText("Export selected node values to file");
 		exportAction.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/export.gif"));
 		

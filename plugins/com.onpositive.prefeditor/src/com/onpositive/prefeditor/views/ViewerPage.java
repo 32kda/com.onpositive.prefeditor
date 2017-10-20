@@ -370,7 +370,7 @@ public abstract class ViewerPage extends Composite {
 				}
 			}
 			try (BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(path))) {
-				properties.store(os, "");
+				properties.store(os, String.format("Preferences for %s, exported by Preference Editor %s", nodeId, PrefEditorPlugin.getDefault().getBundle().getVersion().toString()));
 			} catch (IOException e) {
 				PrefEditorPlugin.log(e);
 			}
