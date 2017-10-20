@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.3.2]
+
+### Added
+
+- Export preference node to file ability 
+
+### Changed
+
+- Multiple I/O exception like "File not found" caused by folder tracking fix 2
+- Some small UI fixes 
+
 ## [1.3.1]
  
 ### Changed
