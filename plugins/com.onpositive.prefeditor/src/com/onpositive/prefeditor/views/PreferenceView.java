@@ -14,6 +14,7 @@ import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.commands.ActionHandler;
+import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.ViewerSorter;
@@ -99,6 +100,8 @@ public class PreferenceView extends ViewPart {
 	private Action trackAction;
 	
 	private Action exportAction;
+	
+	private Action editValueAction;
 
 	private IHandlerActivation copyHandlerActivation;
 
@@ -210,7 +213,7 @@ public class PreferenceView extends ViewPart {
 
 	public void fillContextMenu(IMenuManager manager) {
 		manager.add(addAction);
-		Action[] enabledActions = new Action[] {removeAction, copyAction, copyValueAction, exportAction};
+		Action[] enabledActions = new Action[] {removeAction, copyAction, copyValueAction, editValueAction, exportAction};
 		for (Action action : enabledActions) {
 			if (action.isEnabled()) {
 				manager.add(action);
@@ -486,6 +489,30 @@ public class PreferenceView extends ViewPart {
 		exportAction.setToolTipText("Export selected node values to file");
 		exportAction.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/export.gif"));
 		
+		editValueAction = new Action() {
+			@Override
+			public void run() {
+				ISelection selection = getActiveViewerPage().getSelection();
+				if  (!selection.isEmpty() && (((StructuredSelection) selection).getFirstElement() instanceof KeyValue)) {
+					KeyValue keyValue = (KeyValue) ((StructuredSelection) selection).getFirstElement();
+					String value = keyValue.getValue();
+					InputDialog dialog = new InputDialog(getSite().getShell(), "Edit value", "Edit value for " + keyValue.getKey(), value, null) {
+						protected int getInputTextStyle() {
+							return SWT.BORDER | SWT.MULTI;
+						};
+					};
+					if (dialog.open() == Window.OK) {
+						keyValue.setValue(dialog.getValue());
+						getActiveViewerPage().update(keyValue);
+					}
+				}
+			}
+		};
+		
+		editValueAction.setText("Edit value...");
+		editValueAction.setToolTipText("Edit value in separate dialog");
+		editValueAction.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin(PrefEditorPlugin.PLUGIN_ID,"icons/edit.png"));
+		
 	}
 
 	/**
@@ -514,10 +541,12 @@ public class PreferenceView extends ViewPart {
 		
 		removeAction.setEnabled(!selection.isEmpty()  && activePage.isSelectionEditable());
 		copyAction.setEnabled(!selection.isEmpty());
-		copyValueAction.setEnabled(!selection.isEmpty() && ((StructuredSelection) selection).getFirstElement() instanceof KeyValue);
+		boolean leafSelected = ((StructuredSelection) selection).getFirstElement() instanceof KeyValue;
+		copyValueAction.setEnabled(!selection.isEmpty() && leafSelected);
+		editValueAction.setEnabled(!selection.isEmpty() && leafSelected);
 		trackAction.setChecked(activePage.isTracking());
 		
-		exportAction.setEnabled(!selection.isEmpty() && !(((StructuredSelection) selection).getFirstElement() instanceof KeyValue));
+		exportAction.setEnabled(!selection.isEmpty() && !leafSelected);
 		
 		IActionBars bars = getViewSite().getActionBars();
 		IToolBarManager toolBarManager = bars.getToolBarManager();

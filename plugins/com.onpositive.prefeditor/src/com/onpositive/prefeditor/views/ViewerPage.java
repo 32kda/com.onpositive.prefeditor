@@ -377,4 +377,8 @@ public abstract class ViewerPage extends Composite {
 		}
 	}
 
+	public void update(Object element) {
+		viewer.update(element, null);
+	}
+
 }
