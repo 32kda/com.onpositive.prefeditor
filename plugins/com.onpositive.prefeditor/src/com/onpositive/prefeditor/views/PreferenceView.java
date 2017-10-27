@@ -14,10 +14,8 @@ import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.commands.ActionHandler;
-import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
@@ -46,6 +44,7 @@ import org.osgi.service.prefs.BackingStoreException;
 
 import com.onpositive.prefeditor.PrefEditorPlugin;
 import com.onpositive.prefeditor.dialogs.FolderSelectionDialog;
+import com.onpositive.prefeditor.dialogs.MultiLineInputDialog;
 import com.onpositive.prefeditor.model.KeyValue;
 import com.onpositive.prefeditor.ui.iternal.PrefUIUtil;
 
@@ -112,10 +111,6 @@ public class PreferenceView extends ViewPart {
 	private CTabFolder tabFolder;
 	
 	private ViewerPage activePage;
-
-
-	class NameSorter extends ViewerSorter {
-	}
 
 	/**
 	 * The constructor.
@@ -496,13 +491,9 @@ public class PreferenceView extends ViewPart {
 				if  (!selection.isEmpty() && (((StructuredSelection) selection).getFirstElement() instanceof KeyValue)) {
 					KeyValue keyValue = (KeyValue) ((StructuredSelection) selection).getFirstElement();
 					String value = keyValue.getValue();
-					InputDialog dialog = new InputDialog(getSite().getShell(), "Edit value", "Edit value for " + keyValue.getKey(), value, null) {
-						protected int getInputTextStyle() {
-							return SWT.BORDER | SWT.MULTI;
-						};
-					};
-					if (dialog.open() == Window.OK) {
-						keyValue.setValue(dialog.getValue());
+					MultiLineInputDialog inputDialog = new MultiLineInputDialog(getSite().getShell(), "Edit value", "Edit value for " + keyValue.getKey(), value);
+					if (inputDialog.open() == Window.OK) {
+						keyValue.setValue(inputDialog.getValue());
 						getActiveViewerPage().update(keyValue);
 					}
 				}

@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.3.3]
+
+### Added
+
+- Context action to edit preference value in dialog to simplify editing long values 
+
 ## [1.3.2]
 
 ### Added
