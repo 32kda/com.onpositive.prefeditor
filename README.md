@@ -41,3 +41,7 @@ All the code is licensed under [Eclipse Public License - v 1.0](https://www.ecli
  * Simple content assist, like "true/false" suggestion for some props, multi-line editor window for long text
  * Possibly - importing preferences from file and opening pref file location (does someone need such a features?)
  * Better filtering configuration, like filtering off selected scopes for platform preferences
+
+<a href="http://with-eclipse.github.io/" target="_blank">
+<img alt="with-Eclipse logo" src="http://with-eclipse.github.io/with-eclipse-0.jpg" />
+</a>
