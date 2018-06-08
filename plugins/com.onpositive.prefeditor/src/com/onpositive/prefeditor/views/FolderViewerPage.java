@@ -62,7 +62,9 @@ public class FolderViewerPage extends ViewerPage {
 		}
 		folder = toFile(Platform.getInstallLocation().getURL());
 		if (folder.isDirectory()) {
-			return new File(folder, CONFIGURATION_SETTINGS_PATH).getAbsolutePath();
+			File configFolder = new File(folder, CONFIGURATION_SETTINGS_PATH);
+			configFolder.mkdirs();
+			return configFolder.getAbsolutePath();
 		}
 		return "";
 	}

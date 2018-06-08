@@ -284,7 +284,9 @@ public class FolderSelectionDialog extends Dialog {
 				String selectedName = dialog.getValue();
 				ILaunchConfiguration selectedConfig = configList.stream().filter(config -> selectedName.equals(config.getName())).findFirst().get();
 				String configLocation = getConfigLocation(selectedConfig);
-				valueAdded(new File(configLocation, ".settings").getAbsolutePath());
+				File settingsDir = new File(configLocation, ".settings");
+				settingsDir.mkdirs();
+				valueAdded(settingsDir.getAbsolutePath());
 				buttonPressed(IDialogConstants.OK_ID);
 			}
 		} catch (CoreException e) {
